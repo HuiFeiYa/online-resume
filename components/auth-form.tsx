@@ -6,9 +6,8 @@ import { useRouter } from "next/navigation";
 
 export default function AuthForm({ mode }: { mode: "login" | "register" }) {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -20,7 +19,7 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
       const resp = await fetch(`/api/auth/${mode}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, displayName }),
+        body: JSON.stringify({ username, password }),
       });
       const body = await resp.json().catch(() => ({}));
       if (!resp.ok) {
@@ -41,29 +40,17 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      {!isLogin ? (
-        <div>
-          <label className="field-label" htmlFor="displayName">昵称</label>
-          <input
-            id="displayName"
-            className="field-input"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="怎么称呼你"
-            maxLength={30}
-          />
-        </div>
-      ) : null}
       <div>
-        <label className="field-label" htmlFor="email">邮箱</label>
+        <label className="field-label" htmlFor="username">昵称</label>
         <input
-          id="email"
+          id="username"
           className="field-input"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
+          autoComplete="username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder={isLogin ? "输入你的昵称" : "2 至 20 个字符"}
+          minLength={isLogin ? 1 : 2}
+          maxLength={20}
           required
         />
       </div>
@@ -76,8 +63,9 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
           autoComplete={isLogin ? "current-password" : "new-password"}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder={isLogin ? "输入密码" : "至少 8 位"}
-          minLength={isLogin ? 1 : 8}
+          placeholder={isLogin ? "输入密码" : "至少 6 位"}
+          minLength={isLogin ? 1 : 6}
+          maxLength={72}
           required
         />
       </div>

@@ -4,8 +4,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 
 export type SessionUser = {
   id: string;
-  email: string;
-  displayName: string;
+  username: string;
   role: string;
 };
 
@@ -16,8 +15,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   const rows = await db
     .select({
       id: schema.users.id,
-      email: schema.users.email,
-      displayName: schema.users.displayName,
+      username: schema.users.username,
       role: schema.users.role,
     })
     .from(schema.users)

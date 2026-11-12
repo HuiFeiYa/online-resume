@@ -8,9 +8,12 @@ import { createId } from "@/lib/resume/schema";
 import { z } from "zod";
 
 const bodySchema = z.object({
-  email: z.string().trim().toLowerCase().email("请输入有效邮箱"),
-  password: z.string().min(8, "密码至少 8 位").max(72),
-  displayName: z.string().trim().max(30).optional().default(""),
+  username: z
+    .string()
+    .trim()
+    .min(2, "昵称至少 2 个字符")
+    .max(20, "昵称最多 20 个字符"),
+  password: z.string().min(6, "密码至少 6 位").max(72),
 });
 
 export async function POST(req: NextRequest) {
@@ -19,28 +22,26 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) {
       return errorResponse("VALIDATION_ERROR", parsed.error.issues[0]?.message || "输入有误");
     }
-    const { email, password, displayName } = parsed.data;
+    const { username, password } = parsed.data;
     const db = await getDb();
     const exists = await db
       .select({ id: schema.users.id })
       .from(schema.users)
-      .where(eq(schema.users.email, email))
+      .where(eq(schema.users.username, username))
       .limit(1);
     if (exists.length) {
-      return errorResponse("EMAIL_TAKEN", "该邮箱已注册", 409);
+      return errorResponse("USERNAME_TAKEN", "该昵称已被使用", 409);
     }
     const id = createId("u");
-    const now = Date.now();
     await db.insert(schema.users).values({
       id,
-      email,
+      username,
       passwordHash: await bcrypt.hash(password, 10),
-      displayName: displayName || email.split("@")[0],
       role: "user",
-      createdAt: now,
+      createdAt: Date.now(),
     });
     await setSessionCookie(id);
-    return NextResponse.json({ user: { id, email, displayName: displayName || email.split("@")[0] } });
+    return NextResponse.json({ user: { id, username } });
   } catch (err) {
     return jsonError(err, "注册失败");
   }

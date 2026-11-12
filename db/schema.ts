@@ -10,13 +10,12 @@ export const users = sqliteTable(
   "users",
   {
     id: text("id").primaryKey(),
-    email: text("email").notNull(),
+    username: text("username").notNull(),
     passwordHash: text("password_hash").notNull(),
-    displayName: text("display_name").notNull().default(""),
     role: text("role").notNull().default("user"),
     createdAt: integer("created_at").notNull(),
   },
-  (table) => [uniqueIndex("users_email_unique").on(table.email)],
+  (table) => [uniqueIndex("users_username_unique").on(table.username)],
 );
 
 export const settings = sqliteTable("settings", {

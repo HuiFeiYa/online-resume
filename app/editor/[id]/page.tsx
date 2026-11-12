@@ -25,6 +25,9 @@ export default async function EditorPage({
       initialData={resume.data}
       initialRevision={resume.revision}
       theme={template?.theme || defaultTheme}
+      templateSlug={template?.slug || "forest-editorial"}
+      loggedIn
+      rendererKey={template?.rendererKey || "classic"}
     />
   );
 }

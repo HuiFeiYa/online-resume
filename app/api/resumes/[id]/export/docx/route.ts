@@ -3,7 +3,7 @@ import { getSessionUser } from "@/lib/auth/current-user";
 import { errorResponse, jsonError } from "@/lib/auth/guard";
 import { getUserResume } from "@/lib/resume/store";
 import { getTemplateById } from "@/lib/templates";
-import { buildResumeDocx, safeDocxName } from "@/lib/documents/docx";
+import { buildResumeDocx, exportBaseName } from "@/lib/documents/docx";
 import { defaultTheme } from "@/lib/resume/schema";
 
 export async function POST(
@@ -17,8 +17,12 @@ export async function POST(
     const resume = await getUserResume(user.id, id);
     if (!resume) return errorResponse("NOT_FOUND", "简历不存在", 404);
     const template = await getTemplateById(resume.templateId);
-    const buffer = await buildResumeDocx(resume.data, template?.theme || defaultTheme);
-    const fileName = safeDocxName(resume.data.basics.name || resume.title);
+    const buffer = await buildResumeDocx(
+      resume.data,
+      template?.theme || defaultTheme,
+      template?.rendererKey || "classic",
+    );
+    const fileName = `${exportBaseName(resume.data, resume.title)}.docx`;
     return new NextResponse(buffer as unknown as BodyInit, {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",

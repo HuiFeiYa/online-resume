@@ -49,16 +49,47 @@ export const customSectionSchema = z.object({
   bullets: z.array(z.string().trim().max(500)).max(12),
 });
 
+export const sectionVisibilitySchema = z.object({
+  education: z.boolean().default(true),
+  certificates: z.boolean().default(true),
+  languages: z.boolean().default(true),
+  skills: z.boolean().default(true),
+  experience: z.boolean().default(true),
+  projects: z.boolean().default(true),
+  evaluation: z.boolean().default(true),
+  custom: z.boolean().default(true),
+});
+
+export type SectionVisibility = z.infer<typeof sectionVisibilitySchema>;
+export type SectionKey = keyof SectionVisibility;
+
+export const defaultSectionVisibility: SectionVisibility = {
+  education: true,
+  certificates: true,
+  languages: true,
+  skills: true,
+  experience: true,
+  projects: true,
+  evaluation: true,
+  custom: true,
+};
+
 export const resumeDataSchema = z.object({
   basics: z.object({
-    name: z.string().trim().max(50),
-    jobTitle: z.string().trim().max(60),
-    phone: z.string().trim().max(30),
-    email: z.string().trim().max(100),
+    name: z.string().trim().max(50).default(""),
+    jobTitle: z.string().trim().max(60).default(""),
+    gender: z.string().trim().max(20).default(""),
+    birthDate: z.string().trim().max(30).default(""),
+    yearsExperience: z.string().trim().max(30).default(""),
+    phone: z.string().trim().max(30).default(""),
+    email: z.string().trim().max(100).default(""),
+    school: z.string().trim().max(100).default(""),
+    degree: z.string().trim().max(50).default(""),
     wechat: z.string().trim().max(50).optional().or(z.literal("")),
     city: z.string().trim().max(30).optional().or(z.literal("")),
     website: z.string().trim().max(120).optional().or(z.literal("")),
     photoUrl: z.string().trim().max(500).optional().or(z.literal("")),
+    // Legacy field: normalized into `evaluation` for existing records.
     summary: z.string().trim().max(1200).optional().or(z.literal("")),
   }),
   intention: z.object({
@@ -67,13 +98,15 @@ export const resumeDataSchema = z.object({
     salary: z.string().trim().max(30).optional().or(z.literal("")),
     availability: z.string().trim().max(30).optional().or(z.literal("")),
   }),
-  education: z.array(educationSchema).max(8),
-  experience: z.array(experienceSchema).max(12),
-  projects: z.array(projectSchema).max(12),
-  skills: z.array(skillGroupSchema).max(10),
-  certificates: z.array(z.string().trim().max(100)).max(20),
-  languages: z.array(z.string().trim().max(60)).max(10),
-  customSections: z.array(customSectionSchema).max(6),
+  evaluation: z.string().trim().max(1500).default(""),
+  sectionVisibility: sectionVisibilitySchema.default(defaultSectionVisibility),
+  education: z.array(educationSchema).max(8).default([]),
+  experience: z.array(experienceSchema).max(12).default([]),
+  projects: z.array(projectSchema).max(12).default([]),
+  skills: z.array(skillGroupSchema).max(10).default([]),
+  certificates: z.array(z.string().trim().max(100)).max(20).default([]),
+  languages: z.array(z.string().trim().max(60)).max(10).default([]),
+  customSections: z.array(customSectionSchema).max(6).default([]),
 });
 
 export type ResumeData = z.infer<typeof resumeDataSchema>;
@@ -100,25 +133,67 @@ export function parseTheme(json: string): TemplateTheme {
   }
 }
 
-export function createEmptyResume(name = ""): ResumeData {
-  return {
+/** Normalize records and guest drafts written before the new section model. */
+export function normalizeResumeData(input: unknown): ResumeData {
+  const raw = (input && typeof input === "object" ? input : {}) as Record<string, any>;
+  const basics = (raw.basics && typeof raw.basics === "object" ? raw.basics : {}) as Record<string, any>;
+  const intention = (raw.intention && typeof raw.intention === "object" ? raw.intention : {}) as Record<string, any>;
+  const education = Array.isArray(raw.education) ? raw.education : [];
+  const firstEducation = education[0] || {};
+
+  const normalized = {
+    ...raw,
     basics: {
-      name,
+      name: "",
       jobTitle: "",
+      gender: "",
+      birthDate: "",
+      yearsExperience: "",
       phone: "",
       email: "",
+      school: String(firstEducation.school || ""),
+      degree: String(firstEducation.degree || ""),
       wechat: "",
       city: "",
       website: "",
       photoUrl: "",
-      summary: "",
+      ...basics,
     },
     intention: {
       targetRole: "",
       targetCity: "",
       salary: "",
       availability: "",
+      ...intention,
     },
+    evaluation:
+      typeof raw.evaluation === "string" && raw.evaluation.trim()
+        ? raw.evaluation
+        : typeof basics.summary === "string"
+          ? basics.summary
+          : "",
+    sectionVisibility: {
+      ...defaultSectionVisibility,
+      ...(raw.sectionVisibility && typeof raw.sectionVisibility === "object"
+        ? raw.sectionVisibility
+        : {}),
+    },
+    education,
+    experience: Array.isArray(raw.experience) ? raw.experience : [],
+    projects: Array.isArray(raw.projects) ? raw.projects : [],
+    skills: Array.isArray(raw.skills) ? raw.skills : [],
+    certificates: Array.isArray(raw.certificates) ? raw.certificates : [],
+    languages: Array.isArray(raw.languages) ? raw.languages : [],
+    customSections: Array.isArray(raw.customSections) ? raw.customSections : [],
+  };
+
+  return resumeDataSchema.parse(normalized);
+}
+
+export function createEmptyResume(name = ""): ResumeData {
+  return normalizeResumeData({
+    basics: { name },
+    intention: {},
     education: [],
     experience: [],
     projects: [],
@@ -126,22 +201,25 @@ export function createEmptyResume(name = ""): ResumeData {
     certificates: [],
     languages: [],
     customSections: [],
-  };
+  });
 }
 
 export function createDemoResume(): ResumeData {
-  return {
+  return normalizeResumeData({
     basics: {
       name: "林知夏",
       jobTitle: "产品运营",
+      gender: "女",
+      birthDate: "1999.08",
+      yearsExperience: "3 年",
       phone: "138 0000 1234",
       email: "zhixia@example.com",
       wechat: "zhixia_note",
       city: "上海",
+      school: "华东理工大学",
+      degree: "本科",
       website: "",
       photoUrl: "",
-      summary:
-        "3 年互联网产品运营经验，擅长从用户反馈和业务数据中定位问题，推动跨团队协作落地。关注增长效率与用户体验，习惯用可量化的结果复盘每一次尝试。",
     },
     intention: {
       targetRole: "产品运营 / 用户增长",
@@ -149,6 +227,9 @@ export function createDemoResume(): ResumeData {
       salary: "面议",
       availability: "一个月内",
     },
+    evaluation:
+      "具备用户增长、活动运营和数据分析经验，能够从用户反馈与业务数据中定位问题。习惯用可量化结果复盘，推动跨团队协作落地。",
+    sectionVisibility: defaultSectionVisibility,
     education: [
       {
         id: "edu-1",
@@ -208,7 +289,7 @@ export function createDemoResume(): ResumeData {
     certificates: ["大学英语六级（CET-6）", "全国计算机等级考试二级"],
     languages: ["中文（母语）", "英语（可商务沟通）"],
     customSections: [],
-  };
+  });
 }
 
 export function createId(prefix: string): string {

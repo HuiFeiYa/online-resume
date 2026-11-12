@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, schema } from "@/db";
 import { getTemplateBySlug, incrementTemplateDownload } from "@/lib/templates";
-import { buildResumeDocx, safeDocxName } from "@/lib/documents/docx";
-import { createDemoResume } from "@/lib/resume/schema";
+import { buildResumeDocx, exportBaseName } from "@/lib/documents/docx";
+import { createShowcaseResume } from "@/lib/resume/showcase";
 import { createHash } from "node:crypto";
 
 const buckets = new Map<string, { count: number; resetAt: number }>();
@@ -43,10 +43,8 @@ export async function GET(
     );
   }
 
-  const data = createDemoResume();
-  data.basics.name = "简历示例";
-  data.basics.jobTitle = template.title;
-  const bytes = await buildResumeDocx(data, template.theme);
+  const data = createShowcaseResume(template.id);
+  const bytes = await buildResumeDocx(data, template.theme, template.rendererKey);
   await incrementTemplateDownload(template.id);
   const db = await getDb();
   await db.insert(schema.downloadEvents).values({
@@ -58,7 +56,7 @@ export async function GET(
   return new NextResponse(bytes as unknown as BodyInit, {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(safeDocxName(template.title))}`,
+      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(`${exportBaseName(data, template.title)}.docx`)}`,
       "Cache-Control": "no-store",
     },
   });

@@ -4,12 +4,13 @@ import { getDb, schema } from "@/db";
 import { getSessionUser } from "@/lib/auth/current-user";
 import { errorResponse, jsonError } from "@/lib/auth/guard";
 import { getUserResume } from "@/lib/resume/store";
-import { resumeDataSchema } from "@/lib/resume/schema";
+import { normalizeResumeData, resumeDataSchema } from "@/lib/resume/schema";
 import { z } from "zod";
 
 const patchSchema = z.object({
   title: z.string().trim().min(1).max(60).optional(),
   data: resumeDataSchema.optional(),
+  templateId: z.string().min(1).optional(),
   revision: z.number().int().positive().optional(),
 });
 
@@ -49,11 +50,13 @@ export async function PATCH(
     const db = await getDb();
     const now = Date.now();
     const nextRevision = current.revision + 1;
+    const nextData = normalizeResumeData(parsed.data.data ?? current.data);
     await db
       .update(schema.resumes)
       .set({
         title: parsed.data.title ?? current.title,
-        dataJson: JSON.stringify(parsed.data.data ?? current.data),
+        templateId: parsed.data.templateId ?? current.templateId,
+        dataJson: JSON.stringify(nextData),
         revision: nextRevision,
         updatedAt: now,
       })
@@ -68,7 +71,7 @@ export async function PATCH(
       await db.insert(schema.resumeVersions).values({
         id: `rv-${crypto.randomUUID()}`,
         resumeId: id,
-        dataJson: JSON.stringify(parsed.data.data ?? current.data),
+        dataJson: JSON.stringify(nextData),
         label: "自动保存",
         createdAt: now,
       });

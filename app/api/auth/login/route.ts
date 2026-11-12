@@ -7,7 +7,7 @@ import { errorResponse, jsonError } from "@/lib/auth/guard";
 import { z } from "zod";
 
 const bodySchema = z.object({
-  email: z.string().trim().toLowerCase().email("请输入有效邮箱"),
+  username: z.string().trim().min(1, "请输入昵称").max(20),
   password: z.string().min(1, "请输入密码").max(72),
 });
 
@@ -21,18 +21,17 @@ export async function POST(req: NextRequest) {
     const rows = await db
       .select()
       .from(schema.users)
-      .where(eq(schema.users.email, parsed.data.email))
+      .where(eq(schema.users.username, parsed.data.username))
       .limit(1);
     const user = rows[0];
     if (!user || !(await bcrypt.compare(parsed.data.password, user.passwordHash))) {
-      return errorResponse("INVALID_CREDENTIALS", "邮箱或密码不正确", 401);
+      return errorResponse("INVALID_CREDENTIALS", "昵称或密码不正确", 401);
     }
     await setSessionCookie(user.id);
     return NextResponse.json({
       user: {
         id: user.id,
-        email: user.email,
-        displayName: user.displayName,
+        username: user.username,
         role: user.role,
       },
     });

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/current-user";
 import { Bookmark, FileText, LayoutTemplate, ScanSearch, Sparkles, Users } from "lucide-react";
+import LogoutButton from "@/components/logout-button";
 
 const nav = [
   { href: "/templates", label: "模板中心", icon: LayoutTemplate },
@@ -59,10 +60,11 @@ export default async function SiteHeader() {
               <Link
                 href="/dashboard"
                 className="grid h-9 w-9 place-items-center rounded-full bg-primary-pine text-xs font-semibold text-white"
-                title={user.displayName || user.email}
+                title={user.username}
               >
-                {(user.displayName || user.email).slice(0, 1).toUpperCase()}
+                {user.username.slice(0, 1).toUpperCase()}
               </Link>
+              <LogoutButton />
             </>
           ) : (
             <>

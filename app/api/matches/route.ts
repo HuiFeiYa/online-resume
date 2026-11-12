@@ -55,7 +55,7 @@ function resumeToText(data: ResumeData) {
   const lines = [
     data.basics.name,
     data.basics.jobTitle,
-    data.basics.summary,
+    data.evaluation || data.basics.summary,
     data.intention.targetRole,
     ...data.experience.flatMap((item) => [item.company, item.role, ...item.bullets]),
     ...data.projects.flatMap((item) => [item.name, item.role || "", item.tech.join(" "), ...item.bullets]),

@@ -154,6 +154,13 @@ body {
   animation: fadeUp 0.4s ease-out both;
 }
 
+.print-page {
+  display: flex;
+  justify-content: center;
+  background: #fff;
+  padding: 24px;
+}
+
 @media print {
   @page {
     size: A4;
@@ -162,8 +169,15 @@ body {
   body {
     background: #fff !important;
   }
+  header,
+  footer,
   .no-print {
     display: none !important;
+  }
+  .print-page {
+    display: block !important;
+    padding: 0 !important;
+    background: #fff !important;
   }
   .print-area {
     margin: 0 !important;

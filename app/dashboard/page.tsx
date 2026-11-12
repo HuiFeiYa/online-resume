@@ -27,7 +27,7 @@ export default async function DashboardPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="eyebrow">Workspace</p>
-          <h1 className="mt-2 font-display text-3xl font-bold text-ink">你好，{user.displayName || user.email}</h1>
+          <h1 className="mt-2 font-display text-3xl font-bold text-ink">你好，{user.username}</h1>
           <p className="mt-2 text-sm text-ink-muted">你的简历和分析记录都在这里。</p>
         </div>
         <div className="flex gap-2">
@@ -70,7 +70,7 @@ export default async function DashboardPage() {
                       {templates[index]?.title || "简历模板"} · {dateLabel(resume.updatedAt)}
                     </p>
                     <p className="mt-3 line-clamp-2 text-xs leading-5 text-ink-muted">
-                      {resume.data.basics.summary || "继续完善你的个人简介、工作经历与项目成果。"}
+                      {resume.data.evaluation || resume.data.basics.summary || "继续完善你的个人评价、工作经历与项目成果。"}
                     </p>
                   </div>
                 </div>

@@ -195,39 +195,156 @@ export function localJdMatch(text: string, jd: string) {
     .map((line) => line.trim())
     .filter((line) => line.length >= 6)
     .slice(0, 12);
-  const items = requirements.map((requirement) => {
-    const words = Array.from(
-      new Set(
-        requirement
-          .replace(/[^\p{L}\p{N}+#./ -]/gu, " ")
-          .split(/\s+/)
-          .map((word) => word.trim())
-          .filter((word) => word.length >= 2),
-      ),
-    ).slice(0, 8);
-    const hits = words.filter((word) => normalized.includes(word.toLowerCase()));
-    const ratio = words.length ? hits.length / words.length : 0;
-    return {
-      requirement,
-      status: ratio >= 0.6 ? "matched" : ratio >= 0.25 ? "partial" : "missing",
-      evidence: hits.length ? `简历中出现：${hits.join("、")}` : "简历中未找到对应关键词或经历证据",
-      suggestion:
-        ratio >= 0.6
-          ? "保留当前表达，补充一条更具体的结果。"
-          : "如确有相关经历，请在对应模块补充项目、工具、职责和结果。",
-    };
-  });
-  const matched = items.filter((item) => item.status === "matched").length;
-  const partial = items.filter((item) => item.status === "partial").length;
-  const score = items.length ? Math.round(((matched + partial * 0.5) / items.length) * 100) : 60;
+  const items = requirements.length
+    ? requirements.map((requirement) => matchRequirement(requirement, normalized))
+    : Array.from(new Set(extractPhrases(jd))).slice(0, 10).map((phrase) => ({ phrase }));
+  const normalizedItems = items.map((item) =>
+    "requirement" in item ? item : matchRequirement(item.phrase, normalized),
+  );
+  const matched = normalizedItems.filter((item) => item.status === "matched").length;
+  const partial = normalizedItems.filter((item) => item.status === "partial").length;
+  const score = normalizedItems.length
+    ? Math.round(((matched + partial * 0.5) / normalizedItems.length) * 100)
+    : 60;
   return {
     score,
-    requirements: items,
-    missingKeywords: items.filter((item) => item.status === "missing").map((item) => item.requirement),
+    requirements: normalizedItems,
+    missingKeywords: normalizedItems
+      .filter((item) => item.status !== "matched")
+      .flatMap((item) => item.keywords)
+      .filter((keyword) => !normalized.includes(keyword.toLowerCase()))
+      .slice(0, 8),
     summary: score >= 75
       ? "简历和 JD 的整体重合度较高，建议补充关键要求的成果证据。"
       : score >= 45
         ? "存在一定匹配基础，但仍有关键词或经历没有被简历体现。"
         : "当前简历与 JD 的重合度较低，需要优先调整目标定位和关键词。",
+  };
+}
+
+const skillTerms = [
+  "用户增长",
+  "产品运营",
+  "用户运营",
+  "内容运营",
+  "活动策划",
+  "用户分层",
+  "用户反馈",
+  "新手成长体系",
+  "用户承接",
+  "数据分析",
+  "数据分折",
+  "A/B 测试",
+  "A/B测试",
+  "AB 测试",
+  "AB测试",
+  "用户调研",
+  "用户研究",
+  "增长策略",
+  "留存",
+  "转化率",
+  "复购",
+  "留存率",
+  "转化",
+  "SQL",
+  "Tableau",
+  "Power BI",
+  "Python",
+  "Excel",
+  "Figma",
+  "Axure",
+  "MySQL",
+  "PostgreSQL",
+  "React",
+  "Vue",
+  "Java",
+  "JavaScript",
+  "TypeScript",
+  "Node.js",
+  "项目管理",
+  "跨团队协作",
+  "沟通协调",
+  "本科",
+  "硕士",
+  "博士",
+  "英语",
+  "六级",
+  "四级",
+  "财务",
+  "会计",
+  "审计",
+  "行政",
+  "人事",
+  "招聘",
+  "医护",
+  "护士",
+];
+
+const stopPhrases = new Set([
+  "岗位职责",
+  "任职要求",
+  "工作职责",
+  "职位描述",
+  "负责",
+  "参与",
+  "协助",
+  "具备",
+  "负责公司",
+  "以上",
+  "相关",
+  "经验",
+  "能力",
+  "熟悉",
+  "熟练",
+  "要求",
+  "优先",
+  "本科及",
+]);
+
+function extractPhrases(requirement: string): string[] {
+  const lower = requirement.toLowerCase();
+  const terms = skillTerms.filter((term) => lower.includes(term.toLowerCase()));
+  const english = Array.from(requirement.matchAll(/[A-Za-z][A-Za-z0-9+#./]{1,}/g)).map((m) => m[0]);
+  const chineseSegments = requirement
+    .replace(/[A-Za-z0-9+#./]+/g, " ")
+    .split(/[^\p{Script=Han}]+/u)
+    .map((segment) => segment.trim())
+    .filter((segment) => segment.length >= 2);
+  const ngrams: string[] = [];
+  for (const segment of chineseSegments) {
+    const chars = Array.from(segment);
+    for (let size = Math.min(6, chars.length); size >= 2; size -= 1) {
+      for (let start = 0; start + size <= chars.length; start += 1) {
+        const phrase = chars.slice(start, start + size).join("");
+        if (!stopPhrases.has(phrase)) ngrams.push(phrase);
+        if (ngrams.length >= 80) break;
+      }
+      if (ngrams.length >= 80) break;
+    }
+  }
+  return Array.from(new Set([...terms, ...english, ...ngrams.slice(0, 16)]));
+}
+
+function matchRequirement(requirement: string, normalizedResume: string) {
+  const lower = requirement.toLowerCase();
+  const keywords = extractPhrases(requirement);
+  const strictKeywords = keywords.filter((word) => skillTerms.some((term) => term.toLowerCase() === word.toLowerCase()) || /[A-Za-z]/.test(word));
+  const usefulKeywords = strictKeywords.length ? strictKeywords : keywords.slice(0, 8);
+  const hits = usefulKeywords.filter((word) => normalizedResume.includes(word.toLowerCase()));
+  const ratio = usefulKeywords.length ? hits.length / usefulKeywords.length : 0;
+  const status = ratio >= 0.6 ? "matched" as const : ratio >= 0.25 ? "partial" as const : "missing" as const;
+  return {
+    requirement,
+    status,
+    evidence: hits.length
+      ? `简历中出现：${hits.slice(0, 6).join("、")}`
+      : "简历中未找到对应关键词或经历证据",
+    suggestion:
+      status === "matched"
+        ? "保留当前表达，补充一条更具体的结果。"
+        : status === "partial"
+          ? `建议在对应经历中补充${usefulKeywords.filter((word) => !normalizedResume.includes(word.toLowerCase())).slice(0, 3).join("、") || "相关细节"}。`
+          : "如确有相关经历，请在对应模块补充项目、工具、职责和结果。",
+    keywords: usefulKeywords,
   };
 }

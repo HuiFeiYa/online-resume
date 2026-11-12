@@ -22,18 +22,67 @@ const globalForDb = globalThis as unknown as {
  */
 async function ensureSchema(db: DB): Promise<void> {
   const run = (query: ReturnType<typeof sql>) => (db as any).run(query);
+  const all = async (query: ReturnType<typeof sql>): Promise<any[]> => {
+    const result = await (db as any).all(query);
+    return Array.isArray(result) ? result : [];
+  };
 
   await run(
     sql`CREATE TABLE IF NOT EXISTS users (
       id text PRIMARY KEY NOT NULL,
-      email text NOT NULL,
+      username text NOT NULL,
       password_hash text NOT NULL,
-      display_name text NOT NULL DEFAULT '',
       role text NOT NULL DEFAULT 'user',
       created_at integer NOT NULL
     )`,
   );
-  await run(sql`CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique ON users (email)`);
+
+  // Preserve accounts created by the earlier email-based version of this app.
+  const columns = await all(sql`PRAGMA table_info(users)`);
+  const hasUsername = columns.some((column) => column.name === "username");
+  if (!hasUsername) {
+    // A previous interrupted migration may have left this staging table behind.
+    // It is never the source of truth; `users` still holds every account.
+    await run(sql`DROP TABLE IF EXISTS users_next`);
+    await run(
+      sql`CREATE TABLE users_next (
+        id text PRIMARY KEY NOT NULL,
+        username text NOT NULL,
+        password_hash text NOT NULL,
+        role text NOT NULL DEFAULT 'user',
+        created_at integer NOT NULL
+      )`,
+    );
+    await run(
+      sql`WITH ranked AS (
+        SELECT
+          id,
+          COALESCE(NULLIF(trim(display_name), ''), email) AS base_name,
+          password_hash,
+          role,
+          created_at,
+          row_number() OVER (
+            PARTITION BY lower(COALESCE(NULLIF(trim(display_name), ''), email))
+            ORDER BY created_at, id
+          ) AS rn
+        FROM users
+      )
+      INSERT INTO users_next (id, username, password_hash, role, created_at)
+      SELECT
+        id,
+        CASE
+          WHEN rn = 1 THEN base_name
+          ELSE base_name || '-' || substr(id, -4)
+        END,
+        password_hash,
+        role,
+        created_at
+      FROM ranked`,
+    );
+    await run(sql`DROP TABLE users`);
+    await run(sql`ALTER TABLE users_next RENAME TO users`);
+  }
+  await run(sql`CREATE UNIQUE INDEX IF NOT EXISTS users_username_unique ON users (username)`);
   await run(
     sql`CREATE TABLE IF NOT EXISTS settings (
       key text PRIMARY KEY,

@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { analyzeResumeText, localJdMatch } from "@/lib/analysis/local";
-import { resumeDataSchema } from "@/lib/resume/schema";
+import {
+  createDemoResume,
+  normalizeResumeData,
+  resumeDataSchema,
+} from "@/lib/resume/schema";
+import {
+  clearSection,
+  hasSectionContent,
+  isSectionVisible,
+} from "@/lib/resume/sections";
 
 const resumeText = `张三
 产品运营 | 138 0000 1234 | zhangsan@example.com
@@ -37,8 +46,34 @@ describe("resume analysis", () => {
   });
 });
 
-describe("resume data schema", () => {
-  it("accepts a minimal valid resume", () => {
+describe("resume data normalization", () => {
+  it("accepts a minimal legacy resume and fills the new header fields", () => {
+    const parsed = normalizeResumeData({
+      basics: {
+        name: "张三",
+        jobTitle: "",
+        phone: "",
+        email: "",
+        summary: "三年前端开发经验",
+      },
+      intention: {},
+      education: [{ id: "e1", school: "武汉大学", degree: "本科", major: "软件工程", highlights: [] }],
+      experience: [],
+      projects: [],
+      skills: [],
+      certificates: [],
+      languages: [],
+      customSections: [],
+    });
+    expect(parsed.basics.gender).toBe("");
+    expect(parsed.basics.birthDate).toBe("");
+    expect(parsed.basics.school).toBe("武汉大学");
+    expect(parsed.basics.degree).toBe("本科");
+    expect(parsed.evaluation).toBe("三年前端开发经验");
+    expect(parsed.sectionVisibility.skills).toBe(true);
+  });
+
+  it("still accepts a schema-compatible empty resume", () => {
     const parsed = resumeDataSchema.safeParse({
       basics: { name: "张三", jobTitle: "", phone: "", email: "" },
       intention: {},
@@ -51,5 +86,31 @@ describe("resume data schema", () => {
       customSections: [],
     });
     expect(parsed.success).toBe(true);
+  });
+});
+
+describe("resume section visibility", () => {
+  it("hides empty sections without user action", () => {
+    const data = normalizeResumeData({ basics: { name: "张三" }, intention: {} });
+    expect(hasSectionContent(data, "experience")).toBe(false);
+    expect(isSectionVisible(data, "experience")).toBe(false);
+  });
+
+  it("keeps content but hides it after toggling visibility", () => {
+    const data = createDemoResume();
+    const hidden = {
+      ...data,
+      sectionVisibility: { ...data.sectionVisibility, projects: false },
+    };
+    expect(hasSectionContent(hidden, "projects")).toBe(true);
+    expect(isSectionVisible(hidden, "projects")).toBe(false);
+    expect(hidden.projects).toHaveLength(data.projects.length);
+  });
+
+  it("clears content when a section is deleted", () => {
+    const data = createDemoResume();
+    const cleared = clearSection(data, "experience");
+    expect(cleared.experience).toHaveLength(0);
+    expect(cleared.sectionVisibility.experience).toBe(false);
   });
 });

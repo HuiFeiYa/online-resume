@@ -1,6 +1,99 @@
-import { and, asc, desc, eq, like, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, like, or, sql, type SQL } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import { parseTheme, type TemplateTheme } from "@/lib/resume/schema";
+
+export const SUPPORTED_TEMPLATES = [
+  {
+    id: "tpl-001",
+    slug: "forest-editorial",
+    title: "松林双栏",
+    description: "左侧个人信息与技能，右侧经历主线。适合产品、运营、市场与综合岗位。",
+    category: "通用",
+    tags: ["双栏", "稳重", "应届可用"],
+    rendererKey: "sidebar",
+    themeJson: JSON.stringify({ accent: "#3f6b5a", pale: "#edf3ef", sidebar: true, serif: true }),
+    sort: 100,
+  },
+  {
+    id: "tpl-002",
+    slug: "cinnabar-classic",
+    title: "朱砂单栏",
+    description: "正式、克制的一页式布局，适合行政、财务、教育与传统行业。",
+    category: "正式",
+    tags: ["单栏", "正式", "通用"],
+    rendererKey: "classic",
+    themeJson: JSON.stringify({ accent: "#9b3b30", pale: "#f7efeb", sidebar: false, serif: true }),
+    sort: 99,
+  },
+  {
+    id: "tpl-003",
+    slug: "internet-minimal",
+    title: "互联网极简",
+    description: "项目与技能优先，信息密度适中，适合互联网和科技岗位。",
+    category: "互联网",
+    tags: ["极简", "科技", "项目导向"],
+    rendererKey: "minimal",
+    themeJson: JSON.stringify({ accent: "#2f6076", pale: "#edf3f6", sidebar: false, serif: false }),
+    sort: 98,
+  },
+  {
+    id: "tpl-004",
+    slug: "simple-ats",
+    title: "ATS 简洁版",
+    description: "无照片、无装饰，强调机器可读、结构清楚和信息完整。",
+    category: "正式",
+    tags: ["ATS", "简洁", "通用"],
+    rendererKey: "ats",
+    themeJson: JSON.stringify({ accent: "#343b38", pale: "#f3f4f3", sidebar: false, serif: false }),
+    sort: 97,
+  },
+  {
+    id: "tpl-tech-timeline",
+    slug: "tech-timeline",
+    title: "技术时间线",
+    description: "时间轴突出工作履历连续性和技术成长路径，适合开发、测试与运维。",
+    category: "技术",
+    tags: ["时间线", "技术", "履历"],
+    rendererKey: "timeline",
+    themeJson: JSON.stringify({ accent: "#2b6a7a", pale: "#edf4f5", sidebar: false, serif: false }),
+    sort: 96,
+  },
+  {
+    id: "tpl-banded-section",
+    slug: "banded-section",
+    title: "灰块分区版",
+    description: "灰底模块标题和信息分区，适合国企、传统行业及通用投递。",
+    category: "正式",
+    tags: ["分区", "灰块", "通用"],
+    rendererKey: "banded",
+    themeJson: JSON.stringify({ accent: "#525252", pale: "#f0f0f0", sidebar: false, serif: false }),
+    sort: 95,
+  },
+  {
+    id: "tpl-blue-accent",
+    slug: "blue-accent",
+    title: "蓝色重点版",
+    description: "蓝色标题与技能标签，突出专业能力和个人荣誉。",
+    category: "技术",
+    tags: ["蓝色", "重点", "技能"],
+    rendererKey: "blue",
+    themeJson: JSON.stringify({ accent: "#245c9e", pale: "#eef4fb", sidebar: false, serif: false }),
+    sort: 94,
+  },
+  {
+    id: "tpl-compact-one-page",
+    slug: "compact-one-page",
+    title: "紧凑一页版",
+    description: "更紧凑的间距和更高的信息密度，适合经历较多的职场人。",
+    category: "通用",
+    tags: ["一页", "紧凑", "高密度"],
+    rendererKey: "compact",
+    themeJson: JSON.stringify({ accent: "#47634f", pale: "#eef3ef", sidebar: true, serif: false }),
+    sort: 93,
+  },
+] as const;
+
+const SUPPORTED_SLUGS = SUPPORTED_TEMPLATES.map((item) => item.slug);
 
 export type TemplateItem = {
   id: string;
@@ -17,190 +110,71 @@ export type TemplateItem = {
   sort: number;
 };
 
-const seedTemplates = [
-  {
-    slug: "forest-editorial",
-    title: "松林编辑式",
-    description: "适合产品、运营与市场岗位。左侧信息栏，阅读路径清晰，打印友好。",
-    category: "通用",
-    tags: ["双栏", "稳重", "应届可用"],
-    previewUrl:
-      "https://pub-dda87fa7c11d45d78b76efe76effef5f.r2.dev/resume-templates/mv0j7lxs-lvfsdy90/preview.jpg",
-    rendererKey: "sidebar",
-    themeJson: JSON.stringify({ accent: "#3f6b5a", pale: "#edf3ef", sidebar: true, serif: true }),
-    editorEnabled: 1,
-    sort: 100,
-  },
-  {
-    slug: "cinnabar-classic",
-    title: "朱砂经典单栏",
-    description: "正式、克制的一页式简历，适合行政、财务、教育及传统行业。",
-    category: "通用",
-    tags: ["单栏", "正式", "ATS 友好"],
-    previewUrl:
-      "https://pub-dda87fa7c11d45d78b76efe76effef5f.r2.dev/resume-templates/mv1tmce6-furwc8e7/preview.jpg",
-    rendererKey: "classic",
-    themeJson: JSON.stringify({ accent: "#9b3b30", pale: "#f7efeb", sidebar: false, serif: true }),
-    editorEnabled: 1,
-    sort: 99,
-  },
-  {
-    slug: "internet-minimal",
-    title: "互联网极简",
-    description: "信息密度适中，突出经历结果与技能栈，适合互联网和科技公司。",
-    category: "互联网",
-    tags: ["极简", "科技", "项目导向"],
-    previewUrl:
-      "https://pub-dda87fa7c11d45d78b76efe76effef5f.r2.dev/resume-templates/mv1z8mtd-1y3aqvj6/preview.jpg",
-    rendererKey: "minimal",
-    themeJson: JSON.stringify({ accent: "#2f6076", pale: "#edf3f6", sidebar: false, serif: false }),
-    editorEnabled: 1,
-    sort: 98,
-  },
-  {
-    slug: "graduate-fresh",
-    title: "应届生清新版",
-    description: "为校招设计，突出教育背景、项目经历和校园实践。",
-    category: "应届生",
-    tags: ["校招", "清新", "教育优先"],
-    previewUrl:
-      "https://pub-dda87fa7c11d45d78b76efe76effef5f.r2.dev/resume-templates/mv1tlg0q-4ebkb8k7/preview.jpg",
-    rendererKey: "sidebar",
-    themeJson: JSON.stringify({ accent: "#5c7354", pale: "#f0f4ec", sidebar: true, serif: true }),
-    editorEnabled: 1,
-    sort: 97,
-  },
-  {
-    slug: "product-manager",
-    title: "产品经理聚焦版",
-    description: "把项目、指标和业务结果放到视觉中心，适合产品与运营岗位。",
-    category: "互联网",
-    tags: ["产品", "运营", "结果导向"],
-    previewUrl:
-      "https://pub-dda87fa7c11d45d78b76efe76effef5f.r2.dev/resume-templates/mv2385uy-q7qso6xx/preview.jpg",
-    rendererKey: "minimal",
-    themeJson: JSON.stringify({ accent: "#5a5f7a", pale: "#f0f1f6", sidebar: false, serif: false }),
-    editorEnabled: 1,
-    sort: 96,
-  },
-  {
-    slug: "finance-professional",
-    title: "财务专业版",
-    description: "严谨的单栏结构，突出证书、专业能力与合规经验。",
-    category: "财务",
-    tags: ["财务", "证书", "单栏"],
-    previewUrl:
-      "https://pub-dda87fa7c11d45d78b76efe76effef5f.r2.dev/resume-templates/mv22qegx-7hcq35nf/preview.jpg",
-    rendererKey: "classic",
-    themeJson: JSON.stringify({ accent: "#86672c", pale: "#f7f2e7", sidebar: false, serif: true }),
-    editorEnabled: 1,
-    sort: 95,
-  },
-  {
-    slug: "admin-structure",
-    title: "行政管理结构版",
-    description: "模块边界明确，适合行政、人事和综合管理岗位。",
-    category: "通用",
-    tags: ["行政", "人事", "结构清晰"],
-    previewUrl:
-      "https://pub-dda87fa7c11d45d78b76efe76effef5f.r2.dev/resume-templates/mv1z9ma0-o14d5xxy/preview.jpg",
-    rendererKey: "classic",
-    themeJson: JSON.stringify({ accent: "#616d62", pale: "#f1f3f0", sidebar: false, serif: false }),
-    editorEnabled: 1,
-    sort: 94,
-  },
-  {
-    slug: "design-portfolio",
-    title: "创意作品集版",
-    description: "更活泼的标题层级，适合设计、品牌、新媒体岗位。",
-    category: "设计",
-    tags: ["设计", "创意", "作品集"],
-    previewUrl:
-      "https://pub-dda87fa7c11d45d78b76efe76effef5f.r2.dev/resume-templates/mv1tolof-ur9na0m3/preview.jpg",
-    rendererKey: "sidebar",
-    themeJson: JSON.stringify({ accent: "#9a4d43", pale: "#f8efec", sidebar: true, serif: false }),
-    editorEnabled: 1,
-    sort: 93,
-  },
-  {
-    slug: "project-lead",
-    title: "项目负责人版",
-    description: "强调跨团队协作、项目周期、预算与交付结果。",
-    category: "管理",
-    tags: ["项目管理", "负责人", "成果"],
-    previewUrl:
-      "https://pub-dda87fa7c11d45d78b76efe76effef5f.r2.dev/resume-templates/mv1tnk6t-myr3h7yn/preview.jpg",
-    rendererKey: "minimal",
-    themeJson: JSON.stringify({ accent: "#4e6170", pale: "#eef2f4", sidebar: false, serif: false }),
-    editorEnabled: 1,
-    sort: 92,
-  },
-  {
-    slug: "nurse-care",
-    title: "医护专业版",
-    description: "突出执业资格、临床经历和专业技能，适合医疗健康岗位。",
-    category: "医疗",
-    tags: ["医护", "资格证", "专业"],
-    previewUrl:
-      "https://pub-dda87fa7c11d45d78b76efe76effef5f.r2.dev/resume-templates/mv1to1gz-mhtogx3w/preview.jpg",
-    rendererKey: "classic",
-    themeJson: JSON.stringify({ accent: "#3c7281", pale: "#edf5f6", sidebar: false, serif: true }),
-    editorEnabled: 1,
-    sort: 91,
-  },
-  {
-    slug: "trade-global",
-    title: "外贸商务版",
-    description: "突出语言能力、客户开发和跨境业务成果。",
-    category: "商务",
-    tags: ["外贸", "语言", "客户开发"],
-    previewUrl:
-      "https://pub-dda87fa7c11d45d78b76efe76effef5f.r2.dev/resume-templates/mv1tp3xu-0of0qzi1/preview.jpg",
-    rendererKey: "sidebar",
-    themeJson: JSON.stringify({ accent: "#426b65", pale: "#eff4f3", sidebar: true, serif: true }),
-    editorEnabled: 1,
-    sort: 90,
-  },
-  {
-    slug: "simple-ats",
-    title: "ATS 简洁版",
-    description: "无照片、无装饰，优先保证机器可读与内容完整。",
-    category: "通用",
-    tags: ["ATS", "简洁", "通用"],
-    previewUrl:
-      "https://pub-dda87fa7c11d45d78b76efe76effef5f.r2.dev/resume-templates/mv1tku28-hdcijp2i/preview.jpg",
-    rendererKey: "ats",
-    themeJson: JSON.stringify({ accent: "#343b38", pale: "#f3f4f3", sidebar: false, serif: false }),
-    editorEnabled: 1,
-    sort: 89,
-  },
-];
-
 export async function ensureTemplates(): Promise<void> {
   const db = await getDb();
-  const existing = await db.select({ id: schema.templateItems.id }).from(schema.templateItems).limit(1);
-  if (existing.length) return;
   const now = Date.now();
-  await db.insert(schema.templateItems).values(
-    seedTemplates.map((item, index) => ({
-      id: `tpl-${String(index + 1).padStart(3, "0")}`,
+
+  for (const [index, item] of SUPPORTED_TEMPLATES.entries()) {
+    const existing = await db
+      .select({ id: schema.templateItems.id, themeJson: schema.templateItems.themeJson })
+      .from(schema.templateItems)
+      .where(eq(schema.templateItems.slug, item.slug))
+      .limit(1);
+
+    if (existing.length) {
+      await db
+        .update(schema.templateItems)
+        .set({
+          title: item.title,
+          description: item.description,
+          category: item.category,
+          tags: item.tags.join(","),
+          previewUrl: "",
+          rendererKey: item.rendererKey,
+          themeJson: item.themeJson,
+          editorEnabled: 1,
+          sort: item.sort,
+          updatedAt: now,
+        })
+        .where(eq(schema.templateItems.id, existing[0].id));
+      continue;
+    }
+
+    await db.insert(schema.templateItems).values({
+      id: item.id,
       slug: item.slug,
       title: item.title,
       description: item.description,
       category: item.category,
       tags: item.tags.join(","),
-      previewUrl: item.previewUrl,
+      previewUrl: "",
       docxKey: null,
       sourceId: null,
       rendererKey: item.rendererKey,
       themeJson: item.themeJson,
-      editorEnabled: item.editorEnabled,
-      downloadCount: Math.max(0, 386 - index * 24),
+      editorEnabled: 1,
+      downloadCount: Math.max(0, 386 - index * 32),
       sort: item.sort,
       createdAt: now,
       updatedAt: now,
-    })),
-  );
+    });
+  }
+
+  // Earlier versions imported the whole legacy catalog even though only these
+  // layouts can be rendered faithfully. Hide unsupported entries instead of
+  // showing a preview that leads to a different editor theme.
+  await db
+    .update(schema.templateItems)
+    .set({ editorEnabled: 0, updatedAt: now })
+    .where(
+      and(
+        sql`${schema.templateItems.slug} NOT IN (${sql.join(
+          SUPPORTED_SLUGS.map((slug) => sql`${slug}`),
+          sql`, `,
+        )})`,
+        eq(schema.templateItems.editorEnabled, 1),
+      ),
+    );
 }
 
 function toTemplate(row: typeof schema.templateItems.$inferSelect): TemplateItem {
@@ -229,14 +203,14 @@ export async function listTemplates(options?: {
   const db = await getDb();
   const q = options?.q?.trim();
   const category = options?.category?.trim();
-  const filters = [];
+  const filters: SQL[] = [eq(schema.templateItems.editorEnabled, 1)];
   if (q) {
     filters.push(
       or(
         like(schema.templateItems.title, `%${q}%`),
         like(schema.templateItems.description, `%${q}%`),
         like(schema.templateItems.tags, `%${q}%`),
-      ),
+      )!,
     );
   }
   if (category && category !== "全部") {
@@ -259,7 +233,7 @@ export async function getTemplateBySlug(slug: string): Promise<TemplateItem | nu
   const rows = await db
     .select()
     .from(schema.templateItems)
-    .where(eq(schema.templateItems.slug, slug))
+    .where(and(eq(schema.templateItems.slug, slug), eq(schema.templateItems.editorEnabled, 1)))
     .limit(1);
   return rows[0] ? toTemplate(rows[0]) : null;
 }
@@ -270,7 +244,7 @@ export async function getTemplateById(id: string): Promise<TemplateItem | null> 
   const rows = await db
     .select()
     .from(schema.templateItems)
-    .where(eq(schema.templateItems.id, id))
+    .where(and(eq(schema.templateItems.id, id), eq(schema.templateItems.editorEnabled, 1)))
     .limit(1);
   return rows[0] ? toTemplate(rows[0]) : null;
 }

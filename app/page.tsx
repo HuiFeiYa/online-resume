@@ -82,8 +82,8 @@ export default async function HomePage() {
             </div>
             <div className="surface-card relative z-20 mt-7 grid grid-cols-3 gap-3 p-4 lg:absolute lg:bottom-2 lg:left-8 lg:right-auto lg:mt-0 lg:w-[300px]">
               <div className="text-center">
-                <p className="font-display text-2xl font-bold text-ink">18+</p>
-                <p className="mt-1 text-[11px] text-ink-muted">精选模板</p>
+                <p className="font-display text-2xl font-bold text-ink">4 套</p>
+                <p className="mt-1 text-[11px] text-ink-muted">可编辑版式</p>
               </div>
               <div className="border-x border-surface-line text-center">
                 <p className="font-display text-2xl font-bold text-ink">6 维</p>
@@ -101,7 +101,7 @@ export default async function HomePage() {
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <div className="grid gap-4 md:grid-cols-4">
           {[
-            { icon: Download, title: "免费模板下载", text: "18+ 真实可用的 Word 模板，下载无需登录。", href: "/templates" },
+            { icon: Download, title: "免费模板下载", text: "4 套真实可编辑版式，下载无需登录。", href: "/templates" },
             { icon: Layers, title: "在线简历编辑", text: "结构化填写，A4 实时预览，自动保存。", href: "/editor/new" },
             { icon: FileSearch, title: "简历诊断评分", text: "从完整度、影响力、表达等维度给出建议。", href: "/analysis" },
             { icon: ShieldCheck, title: "JD 匹配分析", text: "逐项拆解岗位要求，找到关键词与经历差距。", href: "/match" },

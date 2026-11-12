@@ -6,6 +6,10 @@ import { getTemplateBySlug } from "@/lib/templates";
 import { getSessionUser } from "@/lib/auth/current-user";
 import { getDb, schema } from "@/db";
 import SaveTemplateButton from "@/components/save-template-button";
+import ResumePreview from "@/components/resume-preview";
+import ResumeFrame from "@/components/resume-frame";
+import { createShowcaseResume } from "@/lib/resume/showcase";
+import { rendererLabel } from "@/lib/renderers";
 
 export default async function TemplateDetailPage({
   params,
@@ -33,6 +37,8 @@ export default async function TemplateDetailPage({
     saved = rows.length > 0;
   }
 
+  const example = createShowcaseResume(template.id);
+
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       <Link href="/templates" className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink">
@@ -41,16 +47,13 @@ export default async function TemplateDetailPage({
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_370px]">
         <div className="overflow-hidden rounded-lg border border-surface-line bg-surface-card p-4 sm:p-8">
-          {template.previewUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={template.previewUrl}
-              alt={`${template.title}完整预览`}
-              className="mx-auto max-h-[820px] w-auto max-w-full border border-surface-line bg-white object-contain shadow-lg"
+          <ResumeFrame className="mx-auto max-w-[760px] border border-surface-line bg-white shadow-xl" height={1123}>
+            <ResumePreview
+              data={example}
+              theme={template.theme}
+              rendererKey={template.rendererKey}
             />
-          ) : (
-            <div className="flex min-h-[500px] items-center justify-center text-ink-muted">暂无预览图</div>
-          )}
+          </ResumeFrame>
         </div>
 
         <aside className="lg:sticky lg:top-24 lg:self-start">
@@ -64,28 +67,31 @@ export default async function TemplateDetailPage({
 
           <div className="mt-5 grid grid-cols-2 gap-3 border-y border-surface-line py-4 text-sm">
             <div>
-              <p className="text-xs text-ink-muted">格式</p>
-              <p className="mt-1 font-medium text-ink">Word / DOCX</p>
+              <p className="text-xs text-ink-muted">版式</p>
+              <p className="mt-1 font-medium text-ink">{rendererLabel(template.rendererKey)}</p>
             </div>
             <div>
               <p className="text-xs text-ink-muted">价格</p>
               <p className="mt-1 font-medium text-accent-success">免费</p>
             </div>
             <div>
-              <p className="text-xs text-ink-muted">下载次数</p>
+              <p className="text-xs text-ink-muted">使用次数</p>
               <p className="mt-1 font-medium text-ink">{template.downloadCount}</p>
             </div>
             <div>
-              <p className="text-xs text-ink-muted">获取方式</p>
-              <p className="mt-1 font-medium text-ink">免登录下载</p>
+              <p className="text-xs text-ink-muted">开始方式</p>
+              <p className="mt-1 font-medium text-ink">无需登录</p>
             </div>
           </div>
 
           <div className="mt-5 space-y-2.5">
             <a href={`/api/templates/${template.slug}/download`} className="btn-primary w-full">
-              <Download size={16} /> 免费下载 Word 模板
+              <Download size={16} /> 免费下载 Word 版
             </a>
-            <Link href={`/editor/new?template=${template.slug}`} className="btn-secondary w-full">
+            <a href={`/api/templates/${template.slug}/download/pdf`} className="btn-secondary w-full">
+              <Download size={16} /> 免费下载 PDF 版
+            </a>
+            <Link href={`/editor/start?template=${template.slug}`} className="btn-secondary w-full">
               <FileText size={16} /> 使用此模板在线填写
             </Link>
             <SaveTemplateButton templateId={template.id} initialSaved={saved} loggedIn={Boolean(user)} />
@@ -96,7 +102,7 @@ export default async function TemplateDetailPage({
               <LockKeyhole size={14} /> 关于在线编辑
             </p>
             <p className="mt-1.5">
-              下载得到的是可自行修改的 Word 文件。在线填写会创建一份结构化简历，保存和 AI 分析需要登录。
+              下载可得到 Word 或 PDF 文件。在线填写无需登录，草稿保存在浏览器，导出时会先保存到账号。
             </p>
           </div>
 
