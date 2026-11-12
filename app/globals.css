@@ -1,0 +1,183 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --c-primary-pine: 53 89 74;
+  --c-primary-deep: 145 53 42;
+  --c-primary-teal: 52 105 92;
+  --c-primary-gold: 160 122 57;
+  --c-surface-base: 246 243 237;
+  --c-surface-card: 253 251 247;
+  --c-surface-raised: 255 255 255;
+  --c-surface-line: 214 207 195;
+  --c-ink: 38 40 37;
+  --c-ink-muted: 104 105 99;
+  --c-ink-soft: 64 68 63;
+  --c-accent-success: 48 126 86;
+  --c-accent-danger: 177 63 54;
+  --c-accent-warn: 166 116 31;
+  --page-bg: #f6f3ed;
+  --page-gradients: none;
+  --selection-bg: rgba(53, 89, 74, 0.18);
+  --selection-fg: #262825;
+  --scroll-thumb: rgba(53, 89, 74, 0.25);
+  --grid-line: rgba(53, 60, 52, 0.055);
+  --glass-bg: rgba(255, 255, 255, 0.62);
+  --glass-hover-bg: rgba(255, 255, 255, 0.86);
+  --modal-scrim: rgba(31, 35, 31, 0.42);
+  --cover-bg: #f6f3ed;
+  --cover-fg: #262825;
+  --cover-card: #fdfbf7;
+  --cover-card-fg: #262825;
+  --cover-popover: #ffffff;
+  --cover-popover-fg: #262825;
+  --cover-primary: #35594a;
+  --cover-primary-fg: #ffffff;
+  --cover-secondary: #e7e2d8;
+  --cover-secondary-fg: #41453f;
+  --cover-muted: #eeeae2;
+  --cover-muted-fg: #686963;
+  --cover-accent: #e7e2d8;
+  --cover-accent-fg: #262825;
+  --cover-destructive: #b13f36;
+  --cover-destructive-fg: #ffffff;
+  --cover-border: #d6cfc3;
+  --cover-input: #d6cfc3;
+  --cover-ring: #35594a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--page-bg);
+  background-image: var(--page-gradients);
+  color: rgb(var(--c-ink));
+  font-family: "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+}
+
+::selection {
+  background: var(--selection-bg);
+  color: var(--selection-fg);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@layer components {
+  .surface-card {
+    @apply rounded-lg border;
+    border-color: rgb(var(--c-surface-line));
+    background-color: var(--glass-bg);
+  }
+  .surface-card-solid {
+    @apply rounded-lg border;
+    border-color: rgb(var(--c-surface-line));
+    background-color: rgb(var(--c-surface-card));
+  }
+  .font-display {
+    @apply font-serif;
+  }
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.14em] text-primary-teal;
+  }
+  .field-label {
+    @apply mb-1.5 block text-xs font-medium text-ink-muted;
+  }
+  .field-input {
+    @apply h-10 w-full rounded-md border bg-white px-3 text-sm text-ink outline-none transition-colors placeholder:text-ink-muted/60 focus:border-primary-teal focus:ring-2 focus:ring-primary-teal/15;
+    border-color: rgb(var(--c-surface-line));
+  }
+  .field-textarea {
+    @apply min-h-24 w-full rounded-md border bg-white px-3 py-2.5 text-sm leading-6 text-ink outline-none transition-colors placeholder:text-ink-muted/60 focus:border-primary-teal focus:ring-2 focus:ring-primary-teal/15;
+    border-color: rgb(var(--c-surface-line));
+  }
+  .btn-primary {
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary-pine px-4 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-md border bg-white px-4 text-sm font-medium text-ink transition-colors hover:bg-surface-base disabled:cursor-not-allowed disabled:opacity-50;
+    border-color: rgb(var(--c-surface-line));
+  }
+  .btn-ghost {
+    @apply inline-flex h-9 items-center justify-center gap-2 rounded-md px-3 text-sm text-ink-muted transition-colors hover:bg-surface-base hover:text-ink;
+  }
+  .tag {
+    @apply inline-flex items-center rounded-md border px-2 py-0.5 text-xs;
+    border-color: rgb(var(--c-surface-line));
+    color: rgb(var(--c-ink-muted));
+    background: rgb(var(--c-surface-card));
+  }
+}
+
+.resume-paper {
+  width: 794px;
+  min-height: 1123px;
+  background: #ffffff;
+  color: #2d302d;
+  box-shadow: 0 1px 3px rgba(39, 42, 38, 0.08), 0 18px 40px -24px rgba(39, 42, 38, 0.35);
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+.resume-paper h1,
+.resume-paper h2,
+.resume-paper h3 {
+  letter-spacing: 0;
+}
+
+.resume-section-title {
+  border-bottom: 1px solid currentColor;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fadeUp 0.4s ease-out both;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  body {
+    background: #fff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-area {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .resume-paper {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    box-shadow: none !important;
+    transform: none !important;
+    margin: 0 !important;
+  }
+  .resume-paper * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
