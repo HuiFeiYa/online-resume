@@ -14,6 +14,8 @@ export const users = sqliteTable(
     username: text("username").notNull(),
     passwordHash: text("password_hash").notNull(),
     role: text("role").notNull().default("user"),
+    isVip: integer("is_vip").notNull().default(0),
+    vipExpiresAt: integer("vip_expires_at"),
     createdAt: integer("created_at").notNull(),
   },
   (table) => [uniqueIndex("users_username_unique").on(table.username)],
@@ -142,6 +144,25 @@ export const analysisJobs = sqliteTable("analysis_jobs", {
   createdAt: integer("created_at").notNull(),
   expiresAt: integer("expires_at").notNull(),
 });
+
+export const optimizedResumes = sqliteTable(
+  "optimized_resumes",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    analysisId: text("analysis_id").notNull(),
+    sourceResumeId: text("source_resume_id"),
+    title: text("title").notNull().default("优化版简历"),
+    dataJson: text("data_json").notNull(),
+    changesJson: text("changes_json").notNull().default("[]"),
+    model: text("model").notNull().default(""),
+    createdAt: integer("created_at").notNull(),
+  },
+  (table) => [
+    index("optimized_resumes_user_idx").on(table.userId, table.createdAt),
+    index("optimized_resumes_analysis_idx").on(table.analysisId),
+  ],
+);
 
 export const consultationLeads = sqliteTable("consultation_leads", {
   id: text("id").primaryKey(),

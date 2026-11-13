@@ -12,9 +12,10 @@ export function signResumePrintToken(
   userId: string,
   resumeId: string,
   expiresAt: number,
+  kind = "resume",
 ): string {
   const payload = Buffer.from(
-    JSON.stringify({ userId, resumeId, expiresAt }),
+    JSON.stringify({ userId, resumeId, expiresAt, kind }),
   ).toString("base64url");
   return `${payload}.${signature(payload)}`;
 }
@@ -22,6 +23,7 @@ export function signResumePrintToken(
 export function readResumePrintToken(
   token: string,
   resumeId: string,
+  kind = "resume",
 ): string | null {
   const [payload, provided] = token.split(".");
   if (!payload || !provided) return null;
@@ -37,9 +39,11 @@ export function readResumePrintToken(
       userId?: string;
       resumeId?: string;
       expiresAt?: number;
+      kind?: string;
     };
     if (
       parsed.resumeId !== resumeId ||
+      (parsed.kind || "resume") !== kind ||
       !parsed.userId ||
       !parsed.expiresAt ||
       parsed.expiresAt < Date.now()

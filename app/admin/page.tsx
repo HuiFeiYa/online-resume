@@ -4,6 +4,8 @@ import { desc, eq, sql } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import { getSessionUser } from "@/lib/auth/current-user";
 import { listTemplates } from "@/lib/templates";
+import { getMembershipPricing } from "@/lib/quota";
+import AdminPricingForm, { AdminUserVipActions } from "@/components/admin-pricing-form";
 
 export const metadata = { title: "管理后台" };
 
@@ -21,12 +23,38 @@ export default async function AdminPage() {
     db.select({ count: sql<number>`count(*)` }).from(schema.downloadEvents),
   ]);
   const templates = await listTemplates();
+  const pricing = await getMembershipPricing();
+  const [userRows, usageRows] = await Promise.all([
+    db
+      .select({
+        id: schema.users.id,
+        username: schema.users.username,
+        isVip: schema.users.isVip,
+        vipExpiresAt: schema.users.vipExpiresAt,
+        createdAt: schema.users.createdAt,
+      })
+      .from(schema.users)
+      .orderBy(desc(schema.users.createdAt))
+      .limit(50),
+    db.select().from(schema.usageCounters),
+  ]);
+  const adminUsers = userRows.map((item) => ({
+    ...item,
+    analysesUsed: usageRows
+      .filter((row) => row.subjectHash === item.id && row.action === "resume_analysis")
+      .reduce((sum, row) => sum + row.count, 0),
+  }));
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
       <p className="eyebrow">Admin</p>
       <h1 className="mt-2 font-display text-3xl font-bold text-ink">管理后台</h1>
-      <p className="mt-2 text-sm text-ink-muted">查看核心使用数据、咨询线索和模板状态。</p>
+      <p className="mt-2 text-sm text-ink-muted">查看核心使用数据、会员价格、用户额度和咨询线索。</p>
+
+      <div className="mt-6 grid gap-5 xl:grid-cols-[0.85fr_1.15fr]">
+        <AdminPricingForm initial={pricing} />
+        <AdminUserVipActions users={adminUsers} />
+      </div>
 
       <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {[

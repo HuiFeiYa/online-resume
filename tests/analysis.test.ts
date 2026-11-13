@@ -14,6 +14,33 @@ import {
   hasSectionContent,
   isSectionVisible,
 } from "@/lib/resume/sections";
+import {
+  FREE_DAILY_ANALYSIS_QUOTA,
+  FREE_DAILY_OPTIMIZE_QUOTA,
+  beijingDayWindow,
+  isVipActive,
+} from "@/lib/quota";
+
+describe("daily free quota", () => {
+  it("grants exactly one free analysis and one optimization per day", () => {
+    expect(FREE_DAILY_ANALYSIS_QUOTA).toBe(1);
+    expect(FREE_DAILY_OPTIMIZE_QUOTA).toBe(1);
+  });
+
+  it("resets on the Beijing natural day boundary", () => {
+    const morning = beijingDayWindow(Date.parse("2026-11-13T00:00:00+08:00"));
+    const night = beijingDayWindow(Date.parse("2026-11-13T23:59:59+08:00"));
+    expect(morning.start).toBe(night.start);
+    expect(morning.end).toBe(night.end);
+    expect(beijingDayWindow(Date.parse("2026-11-14T00:00:00+08:00")).start).toBe(morning.end);
+  });
+
+  it("treats expired membership as free quota", () => {
+    expect(isVipActive({ isVip: 1, vipExpiresAt: Date.now() - 1000 })).toBe(false);
+    expect(isVipActive({ isVip: 1, vipExpiresAt: Date.now() + 60_000 })).toBe(true);
+    expect(isVipActive({ isVip: 1, vipExpiresAt: null })).toBe(true);
+  });
+});
 
 const resumeText = `张三
 产品运营 | 138 0000 1234 | zhangsan@example.com

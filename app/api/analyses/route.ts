@@ -5,6 +5,7 @@ import { errorResponse } from "@/lib/auth/guard";
 import { detectFileKind, extractDocumentText, MAX_FILE_BYTES } from "@/lib/documents/extract";
 import { analyzeResumeWithAi } from "@/lib/analysis/ai";
 import { assertLlmReady, getLlmConfig } from "@/lib/llm";
+import { consumeQuota, getQuotaStatus, releaseQuota } from "@/lib/quota";
 import { getDb, schema } from "@/db";
 import { createId } from "@/lib/resume/schema";
 
@@ -60,6 +61,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const quotaStatus = await getQuotaStatus(user.id, "resume_analysis");
+  if (!quotaStatus.vip && quotaStatus.remaining <= 0) {
+    return errorResponse(
+      "QUOTA_EXCEEDED",
+      "今天的一次免费评分已用完，开通会员后可不限次数使用。",
+      402,
+    );
+  }
+
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -82,7 +92,25 @@ export async function POST(req: NextRequest) {
         }
       }, 15_000);
 
+      let reservation: Awaited<ReturnType<typeof consumeQuota>> | null = null;
       try {
+        send({
+          type: "stage",
+          stage: "quota",
+          label: "正在确认今日额度",
+          detail: quotaStatus.vip ? "会员不限次" : `剩余 ${quotaStatus.remaining} 次免费评分`,
+        });
+        const quota = await consumeQuota(user.id, "resume_analysis");
+        if (!quota.ok) {
+          send({
+            type: "error",
+            code: "QUOTA_EXCEEDED",
+            message: "今天的一次免费评分已用完，开通会员后可不限次数使用。",
+          });
+          return;
+        }
+        reservation = quota;
+
         send({
           type: "stage",
           stage: "parsing",
@@ -91,6 +119,9 @@ export async function POST(req: NextRequest) {
         });
         const text = await extractDocumentText(bytes, name);
         if (text.length < 80) {
+          if (reservation?.reservationId) {
+            await releaseQuota(user.id, "resume_analysis").catch(() => undefined);
+          }
           send({
             type: "error",
             code: "NO_TEXT_LAYER",
@@ -161,6 +192,9 @@ export async function POST(req: NextRequest) {
           sourceHash: createHash("sha256").update(bytes).digest("hex").slice(0, 16),
         });
       } catch (err) {
+        if (reservation?.reservationId) {
+          await releaseQuota(user.id, "resume_analysis").catch(() => undefined);
+        }
         console.error("[api/analyses]", err);
         send({
           type: "error",

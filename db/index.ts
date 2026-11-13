@@ -33,6 +33,8 @@ async function ensureSchema(db: DB): Promise<void> {
       username text NOT NULL,
       password_hash text NOT NULL,
       role text NOT NULL DEFAULT 'user',
+      is_vip integer NOT NULL DEFAULT 0,
+      vip_expires_at integer,
       created_at integer NOT NULL
     )`,
   );
@@ -83,6 +85,13 @@ async function ensureSchema(db: DB): Promise<void> {
     await run(sql`ALTER TABLE users_next RENAME TO users`);
   }
   await run(sql`CREATE UNIQUE INDEX IF NOT EXISTS users_username_unique ON users (username)`);
+  const userColumns = await all(sql`PRAGMA table_info(users)`);
+  if (!userColumns.some((column) => column.name === "is_vip")) {
+    await run(sql`ALTER TABLE users ADD COLUMN is_vip integer NOT NULL DEFAULT 0`);
+  }
+  if (!userColumns.some((column) => column.name === "vip_expires_at")) {
+    await run(sql`ALTER TABLE users ADD COLUMN vip_expires_at integer`);
+  }
   await run(
     sql`CREATE TABLE IF NOT EXISTS settings (
       key text PRIMARY KEY,
@@ -162,6 +171,25 @@ async function ensureSchema(db: DB): Promise<void> {
   );
   await run(
     sql`CREATE INDEX IF NOT EXISTS analysis_jobs_user_idx ON analysis_jobs (user_id, created_at)`,
+  );
+  await run(
+    sql`CREATE TABLE IF NOT EXISTS optimized_resumes (
+      id text PRIMARY KEY NOT NULL,
+      user_id text NOT NULL,
+      analysis_id text NOT NULL,
+      source_resume_id text,
+      title text NOT NULL DEFAULT '优化版简历',
+      data_json text NOT NULL,
+      changes_json text NOT NULL DEFAULT '[]',
+      model text NOT NULL DEFAULT '',
+      created_at integer NOT NULL
+    )`,
+  );
+  await run(
+    sql`CREATE INDEX IF NOT EXISTS optimized_resumes_user_idx ON optimized_resumes (user_id, created_at)`,
+  );
+  await run(
+    sql`CREATE INDEX IF NOT EXISTS optimized_resumes_analysis_idx ON optimized_resumes (analysis_id)`,
   );
   await run(
     sql`CREATE TABLE IF NOT EXISTS consultation_leads (

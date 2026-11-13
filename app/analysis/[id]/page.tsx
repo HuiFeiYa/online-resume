@@ -3,7 +3,10 @@ import { notFound, redirect } from "next/navigation";
 import { CircleAlert, Lightbulb } from "lucide-react";
 import { getSessionUser } from "@/lib/auth/current-user";
 import { getAnalysisForUser } from "@/lib/analysis/store";
+import { getOptimizedResumeByAnalysis } from "@/lib/analysis/optimized-store";
+import { getMembershipPricing, getQuotaStatus } from "@/lib/quota";
 import type { ResumeAnalysisReport } from "@/lib/analysis/v2";
+import OptimizeActions from "@/components/optimize-actions";
 
 export const metadata = { title: "简历诊断报告" };
 
@@ -25,6 +28,11 @@ export default async function AnalysisReportPage({
   const analysis = await getAnalysisForUser(user.id, id);
   if (!analysis) notFound();
   const report = analysis.result as ResumeAnalysisReport;
+  const [quota, optimized, pricing] = await Promise.all([
+    getQuotaStatus(user.id, "resume_optimize"),
+    getOptimizedResumeByAnalysis(user.id, analysis.id),
+    getMembershipPricing(),
+  ]);
   const isV2 = report.version === "2.0";
   const scoreTone =
     report.overallScore >= 80
@@ -34,24 +42,30 @@ export default async function AnalysisReportPage({
         : "text-accent-danger";
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      <Link href="/analysis" className="text-sm text-ink-muted hover:text-ink">← 返回诊断</Link>
-      <div className="mt-5 grid gap-5 lg:grid-cols-[260px_1fr]">
-        <aside className="surface-card h-fit p-6 text-center">
+    <main className="mx-auto max-w-5xl px-4 pb-12 pt-6 sm:px-6">
+      <OptimizeActions
+        analysisId={analysis.id}
+        optimizedId={optimized?.id || null}
+        remaining={quota.remaining}
+        vip={quota.vip}
+        pricing={pricing}
+      />
+
+      <div className="mt-5 grid gap-5 lg:grid-cols-[230px_1fr]">
+        <aside className="surface-card h-fit p-5 text-center">
           <p className="eyebrow">Resume score</p>
-          <p className={`mt-4 font-display text-7xl font-bold ${scoreTone}`}>
+          <p className={`mt-3 font-display text-6xl font-bold ${scoreTone}`}>
             {report.overallScore}
           </p>
           <p className="mt-1 text-sm text-ink-muted">总分 / 100</p>
-          <p className="mt-4 text-sm leading-6 text-ink-soft">{report.summary}</p>
-          <div className="mt-5 space-y-2">
+          <p className="mt-4 line-clamp-6 text-left text-xs leading-6 text-ink-soft">{report.summary}</p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
             <Link href="/dashboard" className="btn-secondary w-full">返回工作台</Link>
-            <Link href="/match" className="btn-ghost w-full">继续做 JD 匹配</Link>
           </div>
         </aside>
 
         <div className="space-y-5">
-          <section className="surface-card p-5 sm:p-6">
+          <section id="dimensions" className="surface-card p-5 sm:p-6">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <p className="eyebrow">Dimensions</p>
@@ -87,7 +101,7 @@ export default async function AnalysisReportPage({
                     <p className="mt-1.5 text-xs leading-5 text-ink-muted">{item.summary}</p>
                     {item.details?.length ? (
                       <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
-                        {item.details?.map((detail) => (
+                        {item.details.map((detail) => (
                           <div key={detail.key} className="flex items-baseline justify-between rounded bg-surface-base px-2.5 py-1.5">
                             <span className="text-[11px] text-ink-soft">{detail.label}</span>
                             <span className="text-[11px] font-medium text-ink">{detail.score} / {detail.max}</span>
@@ -101,7 +115,7 @@ export default async function AnalysisReportPage({
             </div>
           </section>
 
-          <section className="surface-card p-5 sm:p-6">
+          <section id="issues" className="surface-card p-5 sm:p-6">
             <p className="eyebrow">Issues</p>
             <h2 className="mt-1 font-display text-2xl font-bold text-ink">需要优先修改的问题</h2>
             <div className="mt-5 space-y-3">
@@ -118,7 +132,6 @@ export default async function AnalysisReportPage({
                       {issue.severity === "high" ? "高优先级" : issue.severity === "medium" ? "中优先级" : "建议"}
                     </span>
                     <span className="text-xs text-ink-muted">{issue.section}</span>
-                    <span className="text-[11px] text-ink-muted">· {issue.dimension ? dimensionName(issue.dimension) : "历史六维报告"}</span>
                   </div>
                   <p className="mt-3 text-sm font-medium text-ink">{issue.issue}</p>
                   <p className="mt-2 rounded bg-surface-base px-3 py-2 text-xs leading-5 text-ink-soft">
@@ -129,7 +142,7 @@ export default async function AnalysisReportPage({
                   </p>
                   {issue.rewrite ? (
                     <p className="mt-2 border-l-2 border-primary-teal pl-3 text-xs leading-5 text-ink-muted">
-                      示例：{issue.rewrite}
+                      参考：{issue.rewrite}
                     </p>
                   ) : null}
                 </article>
@@ -137,35 +150,11 @@ export default async function AnalysisReportPage({
             </div>
           </section>
 
-          <section className="surface-card p-5 sm:p-6">
-            <p className="eyebrow">Quick wins</p>
-            <h2 className="mt-1 font-display text-2xl font-bold text-ink">可以立刻做的优化</h2>
-            <ol className="mt-4 space-y-2.5">
-              {report.quickWins.map((item, index) => (
-                <li key={`${item}-${index}`} className="flex items-start gap-2.5 text-sm leading-6 text-ink-soft">
-                  <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-primary-pine/10 text-[10px] font-semibold text-primary-pine">
-                    {index + 1}
-                  </span>
-                  {item}
-                </li>
-              ))}
-            </ol>
-          </section>
-
           <p className="flex items-center gap-1.5 text-xs text-ink-muted">
-            <CircleAlert size={13} /> 本报告由大模型按 V2 规则生成，请结合实际经历核对后再修改简历。
+            <CircleAlert size={13} /> 报告由大模型按 V2 规则生成；一键优化只重写表达，不虚构事实。
           </p>
         </div>
       </div>
     </main>
   );
-}
-
-function dimensionName(key: string) {
-  return {
-    information_completeness: "信息完整度",
-    job_match: "岗位匹配度",
-    experience_quality: "经历质量",
-    career_trajectory: "职业轨迹",
-  }[key] || key;
 }

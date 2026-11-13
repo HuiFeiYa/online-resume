@@ -10,6 +10,7 @@ import {
   Target,
   UploadCloud,
 } from "lucide-react";
+import MembershipDialog, { type MembershipPricing } from "@/components/membership-dialog";
 
 type Stage = {
   key: string;
@@ -25,9 +26,18 @@ const initialStages: Stage[] = [
   { key: "saving", label: "保存诊断报告", status: "pending" },
 ];
 
-export default function UploadAnalyzer() {
+export default function UploadAnalyzer({
+  remaining = 2,
+  vip = false,
+  pricing,
+}: {
+  remaining?: number;
+  vip?: boolean;
+  pricing?: MembershipPricing;
+}) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [showMembership, setShowMembership] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [jd, setJd] = useState("");
@@ -68,6 +78,10 @@ export default function UploadAnalyzer() {
       setError("请选择简历文件");
       return;
     }
+    if (!vip && remaining <= 0) {
+      setShowMembership(true);
+      return;
+    }
     if (jd.trim().length > 0 && jd.trim().length < 30) {
       setError("目标 JD 至少需要 30 个字符，留空则不做岗位匹配");
       return;
@@ -92,6 +106,10 @@ export default function UploadAnalyzer() {
 
       if (resp.status === 401) {
         router.push("/login?next=/analysis");
+        return;
+      }
+      if (resp.status === 402) {
+        setShowMembership(true);
         return;
       }
       if (!resp.ok) {
@@ -209,6 +227,12 @@ export default function UploadAnalyzer() {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between rounded-md bg-surface-base px-3 py-2 text-xs">
+        <span className="text-ink-muted">今日免费评分</span>
+        <span className={!vip && remaining <= 0 ? "text-accent-danger" : "text-ink"}>
+          {vip ? "会员 · 不限次" : `剩余 ${remaining} / 1 次`}
+        </span>
+      </div>
       <div>
         <label className="field-label" htmlFor="resume-file">简历文件</label>
         <div
@@ -355,6 +379,12 @@ export default function UploadAnalyzer() {
       <p className="text-center text-xs leading-5 text-ink-muted">
         本功能只接受大模型结果，不使用本地规则兜底。模型未配置、调用失败或输出不符合评分规则时会直接提示错误。
       </p>
+      <MembershipDialog
+        open={showMembership}
+        onClose={() => setShowMembership(false)}
+        pricing={pricing}
+        reason="今天的一次免费评分已用完，开通会员后可继续不限次数诊断。"
+      />
     </div>
   );
 }

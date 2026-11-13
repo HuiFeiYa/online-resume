@@ -38,6 +38,7 @@ type Props = {
   loggedIn: boolean;
   autoExport?: "docx" | "pdf" | null;
   rendererKey?: string;
+  optimizedId?: string;
 };
 
 type SaveState = "saved" | "saving" | "dirty" | "error" | "local";
@@ -221,6 +222,7 @@ export default function ResumeEditor({
   loggedIn,
   autoExport = null,
   rendererKey = "classic",
+  optimizedId,
 }: Props) {
   const router = useRouter();
   const [data, setData] = useState(initialData);
@@ -279,6 +281,20 @@ export default function ResumeEditor({
   }, [templateSlug]);
 
   const persist = useCallback(async () => {
+    if (optimizedId) {
+      setSaveState("saving");
+      try {
+        const resp = await fetch(`/api/optimized-resumes/${optimizedId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: latestData.current }),
+        });
+        setSaveState(resp.ok ? "saved" : "error");
+      } catch {
+        setSaveState("error");
+      }
+      return;
+    }
     if (!resumeId) {
       saveLocalDraft();
       return;
@@ -310,7 +326,7 @@ export default function ResumeEditor({
     } catch {
       setSaveState("error");
     }
-  }, [resumeId, revision, saveLocalDraft]);
+  }, [resumeId, revision, saveLocalDraft, optimizedId]);
 
   useEffect(() => {
     if (saveState !== "dirty") return;
@@ -393,7 +409,10 @@ export default function ResumeEditor({
     format: "docx" | "pdf",
     fallbackData: ResumeData = latestData.current,
   ) {
-    const resp = await fetch(`/api/resumes/${id}/export/${format}`, {
+    const exportUrl = optimizedId
+      ? `/api/optimized-resumes/${optimizedId}/export/${format}`
+      : `/api/resumes/${id}/export/${format}`;
+    const resp = await fetch(exportUrl, {
       method: "POST",
       cache: "no-store",
     });
@@ -434,7 +453,7 @@ export default function ResumeEditor({
       requestLogin(format);
       return;
     }
-    if (!resumeId) {
+    if (!resumeId && !optimizedId) {
       setExporting(true);
       await claimDraftAndExport(format);
       setExporting(false);
@@ -442,7 +461,7 @@ export default function ResumeEditor({
     }
     setExporting(true);
     try {
-      await downloadExport(resumeId, format);
+      await downloadExport(resumeId || optimizedId || "", format);
     } finally {
       setExporting(false);
     }

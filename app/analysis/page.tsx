@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle2, FileSearch, ShieldCheck, Target } from "lucide-react";
 import UploadAnalyzer from "@/components/upload-analyzer";
 import { getSessionUser } from "@/lib/auth/current-user";
+import { getMembershipPricing, getQuotaStatus } from "@/lib/quota";
 import { desc, eq } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 
@@ -10,7 +11,10 @@ export const metadata = { title: "简历诊断" };
 export default async function AnalysisPage() {
   const user = await getSessionUser();
   let recent: Array<typeof schema.analysisJobs.$inferSelect> = [];
+  let quota = null;
+  const pricing = await getMembershipPricing();
   if (user) {
+    quota = await getQuotaStatus(user.id, "resume_analysis");
     const db = await getDb();
     recent = await db
       .select()
@@ -87,7 +91,11 @@ export default async function AnalysisPage() {
           <h2 className="font-display text-xl font-bold text-ink">上传简历</h2>
           <p className="mt-1 text-sm text-ink-muted">登录后由大模型完成深度诊断。</p>
           <div className="mt-5">
-            <UploadAnalyzer />
+            <UploadAnalyzer
+              remaining={quota?.remaining ?? 2}
+              vip={quota?.vip ?? false}
+              pricing={pricing}
+            />
           </div>
           {!user ? (
             <p className="mt-4 text-center text-xs text-ink-muted">
