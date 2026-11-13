@@ -17,7 +17,13 @@ export default async function NewResumePage() {
       <div className="mt-5">
         <p className="eyebrow">New resume</p>
         <h1 className="mt-2 font-display text-3xl font-bold text-ink">选择简历模板</h1>
-        <p className="mt-2 text-sm text-ink-muted">无需登录即可开始填写。草稿保存在当前浏览器，导出时再登录。</p>
+        <p className="mt-2 text-sm text-ink-muted">
+          这里是在线制作的 8 套可编辑版式。需要下载服务端原始模板，请前往
+          <Link href="/templates" className="mx-1 font-medium text-primary-pine hover:underline">
+            模板中心
+          </Link>
+          。
+        </p>
       </div>
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {templates.map((template) => (

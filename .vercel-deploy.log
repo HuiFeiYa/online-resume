@@ -1,0 +1,117 @@
+Vercel CLI 65.15.0
+Deploying online-resume
+Uploading [--------------------] (0.0B/228.9KB)
+Uploading [=====---------------] (64.0KB/228.9KB)
+Uploading [===========---------] (128.0KB/228.9KB)
+Uploading [===============-----] (176.0KB/228.9KB)
+Uploading [====================] (228.9KB/228.9KB)
+  Inspect         https://vercel.com/guanwanxiaos-projects/online-resume/3u6bUAvYMLUYLqHwpE8usDTkNE4t
+  Production      https://online-resume-i9lxzkbeq-guanwanxiaos-projects.vercel.app
+https://online-resume-i9lxzkbeq-guanwanxiaos-projects.vercel.appBuilding…
+Building…
+Running build in Washington, D.C., USA (East) – iad1
+Build machine configuration: 2 cores, 8 GB
+Retrieving list of deployment files...
+Downloading 118 deployment files...
+Restored build cache from previous deployment (5jfaUyNHzn6rs1cwe5wK8nPDvgUW)
+Running "vercel build"
+Vercel CLI 65.14.0
+Warning: Detected "engines": { "node": ">=22.0.0" } in your `package.json` that will automatically upgrade when a new major Node.js Version is released. Learn More: https://vercel.link/node-version
+Installing dependencies...
+npm warn Unknown env config "cache-dir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+up to date in 779ms
+62 packages are looking for funding
+run `npm fund` for details
+npm warn install-scripts 4 packages have install scripts not yet covered by allowScripts:
+npm warn install-scripts   esbuild@0.18.20 (postinstall: node install.js)
+npm warn install-scripts   better-sqlite3@12.11.1 (install: node-gyp rebuild)
+npm warn install-scripts   esbuild@0.25.12 (postinstall: node install.js)
+npm warn install-scripts   esbuild@0.28.2 (postinstall: node install.js)
+npm warn install-scripts
+npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+Detected Next.js version: 15.5.29
+Running "npm run build"
+npm warn Unknown env config "cache-dir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+> jianye-resume@0.1.0 build
+> next build
+▲ Next.js 15.5.29
+Creating an optimized production build ...
+✓ Compiled successfully in 7.6s
+Linting and checking validity of types ...
+Collecting page data ...
+Generating static pages (0/29) ...
+Generating static pages (7/29)
+Generating static pages (14/29)
+Generating static pages (21/29)
+✓ Generating static pages (29/29)
+Finalizing page optimization ...
+Collecting build traces ...
+Route (app)                                     Size  First Load JS
+┌ ƒ /                                        1.51 kB         108 kB
+├ ƒ /_not-found                                999 B         104 kB
+├ ƒ /admin                                     164 B         106 kB
+├ ƒ /analysis                                3.57 kB         110 kB
+├ ƒ /analysis/[id]                           1.51 kB         108 kB
+├ ƒ /api/analyses                              193 B         103 kB
+├ ƒ /api/analyses/[id]                         193 B         103 kB
+├ ƒ /api/auth/login                            193 B         103 kB
+├ ƒ /api/auth/logout                           193 B         103 kB
+├ ƒ /api/auth/me                               193 B         103 kB
+├ ƒ /api/auth/register                         193 B         103 kB
+├ ƒ /api/chat                                  193 B         103 kB
+├ ƒ /api/consultations                         193 B         103 kB
+├ ƒ /api/matches                               193 B         103 kB
+├ ƒ /api/resumes                               193 B         103 kB
+├ ƒ /api/resumes/[id]                          193 B         103 kB
+├ ƒ /api/resumes/[id]/export/docx              193 B         103 kB
+├ ƒ /api/resumes/[id]/export/pdf               193 B         103 kB
+├ ƒ /api/saved-templates/[id]                  193 B         103 kB
+├ ƒ /api/templates/[slug]                      193 B         103 kB
+├ ƒ /api/templates/[slug]/download             193 B         103 kB
+├ ƒ /api/templates/[slug]/download/pdf         193 B         103 kB
+├ ƒ /api/templates/remote/[id]/download        193 B         103 kB
+├ ƒ /api/upload                                193 B         103 kB
+├ ƒ /api/xcx/resume-templates                  193 B         103 kB
+├ ƒ /api/xcx/resume-templates/[id]             193 B         103 kB
+├ ƒ /api/xcx/resume-templates/[id]/download    193 B         103 kB
+├ ○ /apple-icon.png                              0 B            0 B
+├ ƒ /consult                                 3.21 kB         106 kB
+├ ƒ /dashboard                               1.51 kB         108 kB
+├ ƒ /dashboard/saved                         1.77 kB         108 kB
+├ ƒ /editor/[id]                               170 B         146 kB
+├ ƒ /editor/draft                            1.37 kB         147 kB
+├ ƒ /editor/new                              3.53 kB         135 kB
+├ ƒ /editor/start                            4.11 kB         133 kB
+├ ○ /icon.svg                                    0 B            0 B
+├ ƒ /login                                   1.27 kB         107 kB
+├ ƒ /match                                   3.33 kB         109 kB
+├ ƒ /match/[id]                              1.51 kB         108 kB
+├ ƒ /print/resume/[id]                         193 B         103 kB
+├ ƒ /print/template/[slug]                     193 B         103 kB
+├ ƒ /register                                1.27 kB         107 kB
+├ ƒ /templates                               1.51 kB         108 kB
+└ ƒ /templates/[slug]                        1.51 kB         108 kB
++ First Load JS shared by all                 103 kB
+├ chunks/1255-b84741b894bb9354.js          46.6 kB
+├ chunks/4bd1b696-f785427dddbba9fb.js      54.2 kB
+└ other shared chunks (total)              1.93 kB
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+Traced Next.js server files in: 75.83ms
+Created all serverless functions in: 982.719ms
+Collected static files (public/, static/, .next/static): 6.098ms
+Build Completed in /vercel/output [39s]
+Deploying outputs...
+[2K[1A[2K[G  Production      https://online-resume-i9lxzkbeq-guanwanxiaos-projects.vercel.app
+Completing…
+▲ Aliased         https://www.xiaoguamanhua.asia
+
+✓ Ready in 54s
+
+Next steps:
+- Check the production response:
+  vercel curl https://www.xiaoguamanhua.asia
+- View build logs:
+  vercel inspect online-resume-i9lxzkbeq-guanwanxiaos-projects.vercel.app --logs
+- Create a new deployment from the same source:
+  vercel redeploy online-resume-i9lxzkbeq-guanwanxiaos-projects.vercel.app

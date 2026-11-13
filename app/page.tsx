@@ -1,11 +1,18 @@
 import Link from "next/link";
 import { ArrowRight, Check, Download, FileSearch, Layers, ShieldCheck } from "lucide-react";
-import { listTemplates } from "@/lib/templates";
-import TemplateCard from "@/components/template-card";
+import { listServerTemplates } from "@/lib/remote-templates";
+import ServerTemplateCard from "@/components/server-template-card";
 
 export default async function HomePage() {
-  const templates = await listTemplates({ sort: "popular" });
-  const featured = templates.slice(0, 4);
+  let featured: Awaited<ReturnType<typeof listServerTemplates>>["templates"] = [];
+  let templateCount = 0;
+  try {
+    const result = await listServerTemplates({ sort: "popular" });
+    featured = result.templates.slice(0, 4);
+    templateCount = result.total;
+  } catch (error) {
+    console.error("[home] 服务端模板加载失败", error);
+  }
 
   return (
     <main>
@@ -82,8 +89,8 @@ export default async function HomePage() {
             </div>
             <div className="surface-card relative z-20 mt-7 grid grid-cols-3 gap-3 p-4 lg:absolute lg:bottom-2 lg:left-8 lg:right-auto lg:mt-0 lg:w-[300px]">
               <div className="text-center">
-                <p className="font-display text-2xl font-bold text-ink">4 套</p>
-                <p className="mt-1 text-[11px] text-ink-muted">可编辑版式</p>
+                <p className="font-display text-2xl font-bold text-ink">{templateCount ? `${templateCount}+` : "18+"}</p>
+                <p className="mt-1 text-[11px] text-ink-muted">服务端模板</p>
               </div>
               <div className="border-x border-surface-line text-center">
                 <p className="font-display text-2xl font-bold text-ink">6 维</p>
@@ -101,7 +108,7 @@ export default async function HomePage() {
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <div className="grid gap-4 md:grid-cols-4">
           {[
-            { icon: Download, title: "免费模板下载", text: "4 套真实可编辑版式，下载无需登录。", href: "/templates" },
+            { icon: Download, title: "免费模板下载", text: "服务端精选模板，预览后免费下载 Word。", href: "/templates" },
             { icon: Layers, title: "在线简历编辑", text: "结构化填写，A4 实时预览，自动保存。", href: "/editor/new" },
             { icon: FileSearch, title: "简历诊断评分", text: "从完整度、影响力、表达等维度给出建议。", href: "/analysis" },
             { icon: ShieldCheck, title: "JD 匹配分析", text: "逐项拆解岗位要求，找到关键词与经历差距。", href: "/match" },
@@ -123,16 +130,23 @@ export default async function HomePage() {
           <div>
             <p className="eyebrow">Template library</p>
             <h2 className="mt-2 font-display text-2xl font-bold text-ink">热门简历模板</h2>
-            <p className="mt-1 text-sm text-ink-muted">从真实岗位场景出发，选择一份适合你的版式。</p>
+            <p className="mt-1 text-sm text-ink-muted">从服务端模板库精选，选择喜欢的版式后直接下载。</p>
           </div>
           <Link href="/templates" className="hidden items-center gap-1 text-sm text-primary-pine hover:underline sm:flex">
             查看全部 <ArrowRight size={14} />
           </Link>
         </div>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {featured.map((template) => (
-            <TemplateCard key={template.id} template={template} />
-          ))}
+          {featured.length ? (
+            featured.map((template) => (
+              <ServerTemplateCard key={template.id} template={template} />
+            ))
+          ) : (
+            <div className="surface-card col-span-full p-8 text-center">
+              <p className="text-sm text-ink-muted">热门模板暂时无法加载，请前往模板中心查看。</p>
+              <Link href="/templates" className="btn-secondary mt-4">打开模板中心</Link>
+            </div>
+          )}
         </div>
       </section>
 

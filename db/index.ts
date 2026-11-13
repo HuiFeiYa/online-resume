@@ -196,6 +196,54 @@ async function ensureSchema(db: DB): Promise<void> {
       created_at integer NOT NULL
     )`,
   );
+
+  // Remote/downloadable resume templates migrated from the template-store backend.
+  await run(
+    sql`CREATE TABLE IF NOT EXISTS resume_templates (
+      id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+      name text NOT NULL,
+      description text,
+      category text NOT NULL DEFAULT 'general',
+      tags text NOT NULL DEFAULT '',
+      preview_url text NOT NULL,
+      preview_key text NOT NULL DEFAULT '',
+      file_url text NOT NULL,
+      file_key text NOT NULL DEFAULT '',
+      file_name text NOT NULL,
+      file_size integer,
+      file_mime text NOT NULL DEFAULT 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      is_free integer NOT NULL DEFAULT 1,
+      price_points integer NOT NULL DEFAULT 0,
+      price_fen integer NOT NULL DEFAULT 0,
+      heat integer NOT NULL DEFAULT 0,
+      sort integer NOT NULL DEFAULT 0,
+      status integer NOT NULL DEFAULT 1,
+      username text,
+      created_at integer NOT NULL,
+      updated_at integer NOT NULL
+    )`,
+  );
+  await run(sql`CREATE INDEX IF NOT EXISTS resume_tpl_status_idx ON resume_templates (status, sort)`);
+  await run(sql`CREATE INDEX IF NOT EXISTS resume_tpl_category_idx ON resume_templates (category)`);
+  await run(
+    sql`CREATE TABLE IF NOT EXISTS resume_template_grants (
+      id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+      username text NOT NULL,
+      open_id text NOT NULL DEFAULT '',
+      template_id integer NOT NULL,
+      out_trade_no text NOT NULL DEFAULT '',
+      created_at integer NOT NULL
+    )`,
+  );
+  await run(
+    sql`CREATE UNIQUE INDEX IF NOT EXISTS ux_resume_tpl_grants_user_tpl ON resume_template_grants (username, template_id)`,
+  );
+  await run(
+    sql`CREATE INDEX IF NOT EXISTS resume_tpl_grants_username_idx ON resume_template_grants (username)`,
+  );
+  await run(
+    sql`CREATE INDEX IF NOT EXISTS resume_tpl_grants_template_idx ON resume_template_grants (template_id)`,
+  );
 }
 
 let schemaEnsured = false;

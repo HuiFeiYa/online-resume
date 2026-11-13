@@ -1,7 +1,11 @@
 import Link from "next/link";
-import { Search } from "lucide-react";
-import { listTemplates, templateCategories } from "@/lib/templates";
-import TemplateCard from "@/components/template-card";
+import { Search, ServerCrash } from "lucide-react";
+import {
+  categorySlugFromLabel,
+  listServerTemplates,
+  serverTemplateCategories,
+} from "@/lib/remote-templates";
+import ServerTemplateCard from "@/components/server-template-card";
 
 export const metadata = { title: "简历模板" };
 
@@ -12,11 +16,31 @@ export default async function TemplatesPage({
 }) {
   const params = await searchParams;
   const q = params.q || "";
-  const category = params.category || "全部";
+  const categoryLabel = params.category || "全部";
   const sort = params.sort === "popular" || params.sort === "latest" ? params.sort : "recommended";
-  const allTemplates = await listTemplates();
-  const templates = await listTemplates({ q, category, sort });
-  const categories = templateCategories(allTemplates);
+
+  let templates: Awaited<ReturnType<typeof listServerTemplates>>["templates"] = [];
+  let allTemplates: typeof templates = [];
+  let total = 0;
+  let unavailableMessage = "";
+
+  try {
+    const all = await listServerTemplates();
+    allTemplates = all.templates;
+    const category = categorySlugFromLabel(allTemplates, categoryLabel);
+    const filtered = await listServerTemplates({
+      q,
+      category,
+      sort,
+    });
+    templates = filtered.templates;
+    total = filtered.total;
+  } catch (error) {
+    unavailableMessage =
+      error instanceof Error ? error.message : "服务端模板暂时无法加载";
+  }
+
+  const categories = serverTemplateCategories(allTemplates);
 
   function href(nextCategory: string) {
     const search = new URLSearchParams();
@@ -32,11 +56,16 @@ export default async function TemplatesPage({
       <div className="flex flex-col gap-5 border-b border-surface-line pb-7 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="eyebrow">Template library</p>
-          <h1 className="mt-2 font-display text-3xl font-bold text-ink">免费简历模板</h1>
-          <p className="mt-2 text-sm text-ink-muted">当前模板全部免费，下载无需登录。选择版式后可以直接在线填写。</p>
+          <h1 className="mt-2 font-display text-3xl font-bold text-ink">简历模板下载</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">
+            这里展示服务端模板目录，下载原始 Word 文件。需要在线填写时，请前往“在线制作”选择结构化的可编辑版式。
+          </p>
+          <Link href="/editor/new" className="mt-3 inline-block text-sm font-medium text-primary-pine hover:underline">
+            前往在线制作 →
+          </Link>
         </div>
         <form className="flex w-full gap-2 sm:w-auto">
-          {category !== "全部" ? <input type="hidden" name="category" value={category} /> : null}
+          {categoryLabel !== "全部" ? <input type="hidden" name="category" value={categoryLabel} /> : null}
           {sort !== "recommended" ? <input type="hidden" name="sort" value={sort} /> : null}
           <div className="relative flex-1 sm:w-80">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
@@ -51,62 +80,76 @@ export default async function TemplatesPage({
         </form>
       </div>
 
-      <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap gap-2">
-          {categories.map((item) => (
-            <Link
-              key={item}
-              href={href(item)}
-              className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
-                item === category
-                  ? "border-primary-pine bg-primary-pine text-white"
-                  : "border-surface-line bg-white text-ink-muted hover:text-ink"
-              }`}
-            >
-              {item}
-            </Link>
-          ))}
-        </div>
-        <div className="flex gap-1 rounded-md border border-surface-line bg-white p-1 text-xs">
-          {[
-            ["recommended", "推荐"],
-            ["popular", "最热"],
-            ["latest", "最新"],
-          ].map(([key, label]) => {
-            const search = new URLSearchParams();
-            if (q) search.set("q", q);
-            if (category !== "全部") search.set("category", category);
-            if (key !== "recommended") search.set("sort", key);
-            return (
-              <Link
-                key={key}
-                href={search.size ? `/templates?${search.toString()}` : "/templates"}
-                className={`rounded px-3 py-1.5 ${sort === key ? "bg-surface-base font-medium text-ink" : "text-ink-muted"}`}
-              >
-                {label}
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="mt-6 flex items-center justify-between text-sm text-ink-muted">
-        <span>共 {templates.length} 个模板</span>
-        {q ? <span>搜索“{q}”</span> : null}
-      </div>
-
-      {templates.length ? (
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {templates.map((template) => (
-            <TemplateCard key={template.id} template={template} />
-          ))}
+      {unavailableMessage ? (
+        <div className="surface-card mt-8 p-8 text-center">
+          <ServerCrash size={34} className="mx-auto text-accent-danger" />
+          <h2 className="mt-3 text-lg font-semibold text-ink">服务端模板暂时无法加载</h2>
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-ink-muted">{unavailableMessage}</p>
+          <p className="mx-auto mt-2 max-w-xl text-xs leading-5 text-ink-muted">
+            模板目录读取自 `D:\person\template-store\miniprogram` 使用的服务端接口。服务恢复后刷新页面即可。
+          </p>
+          <Link href="/editor/new" className="btn-secondary mt-5">先使用在线制作</Link>
         </div>
       ) : (
-        <div className="surface-card mt-4 flex min-h-64 flex-col items-center justify-center p-8 text-center">
-          <p className="font-medium text-ink">没有找到匹配的模板</p>
-          <p className="mt-2 text-sm text-ink-muted">试试更短的搜索词，或查看全部模板。</p>
-          <Link href="/templates" className="btn-secondary mt-5">查看全部</Link>
-        </div>
+        <>
+          <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap gap-2">
+              {categories.map((item) => (
+                <Link
+                  key={item}
+                  href={href(item)}
+                  className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
+                    item === categoryLabel
+                      ? "border-primary-pine bg-primary-pine text-white"
+                      : "border-surface-line bg-white text-ink-muted hover:text-ink"
+                  }`}
+                >
+                  {item}
+                </Link>
+              ))}
+            </div>
+            <div className="flex gap-1 rounded-md border border-surface-line bg-white p-1 text-xs">
+              {[
+                ["recommended", "推荐"],
+                ["popular", "最热"],
+                ["latest", "最新"],
+              ].map(([key, label]) => {
+                const search = new URLSearchParams();
+                if (q) search.set("q", q);
+                if (categoryLabel !== "全部") search.set("category", categoryLabel);
+                if (key !== "recommended") search.set("sort", key);
+                return (
+                  <Link
+                    key={key}
+                    href={search.size ? `/templates?${search.toString()}` : "/templates"}
+                    className={`rounded px-3 py-1.5 ${sort === key ? "bg-surface-base font-medium text-ink" : "text-ink-muted"}`}
+                  >
+                    {label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-center justify-between text-sm text-ink-muted">
+            <span>共 {total || templates.length} 个服务端模板</span>
+            {q ? <span>搜索“{q}”</span> : null}
+          </div>
+
+          {templates.length ? (
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {templates.map((template) => (
+                <ServerTemplateCard key={template.id} template={template} />
+              ))}
+            </div>
+          ) : (
+            <div className="surface-card mt-4 flex min-h-64 flex-col items-center justify-center p-8 text-center">
+              <p className="font-medium text-ink">没有找到匹配的模板</p>
+              <p className="mt-2 text-sm text-ink-muted">试试更短的搜索词，或查看全部模板。</p>
+              <Link href="/templates" className="btn-secondary mt-5">查看全部</Link>
+            </div>
+          )}
+        </>
       )}
     </main>
   );

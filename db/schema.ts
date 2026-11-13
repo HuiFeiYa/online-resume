@@ -1,4 +1,5 @@
 import {
+  index,
   integer,
   primaryKey,
   sqliteTable,
@@ -45,6 +46,56 @@ export const templateItems = sqliteTable(
     updatedAt: integer("updated_at").notNull(),
   },
   (table) => [uniqueIndex("template_items_slug_unique").on(table.slug)],
+);
+
+export const resumeTemplates = sqliteTable(
+  "resume_templates",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    name: text("name").notNull(),
+    description: text("description"),
+    category: text("category").notNull().default("general"),
+    tags: text("tags").notNull().default(""),
+    previewUrl: text("preview_url").notNull(),
+    previewKey: text("preview_key").notNull().default(""),
+    fileUrl: text("file_url").notNull(),
+    fileKey: text("file_key").notNull().default(""),
+    fileName: text("file_name").notNull(),
+    fileSize: integer("file_size"),
+    fileMime: text("file_mime")
+      .notNull()
+      .default("application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+    isFree: integer("is_free").notNull().default(1),
+    pricePoints: integer("price_points").notNull().default(0),
+    priceFen: integer("price_fen").notNull().default(0),
+    heat: integer("heat").notNull().default(0),
+    sort: integer("sort").notNull().default(0),
+    status: integer("status").notNull().default(1),
+    username: text("username"),
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+  },
+  (table) => [
+    index("resume_tpl_status_idx").on(table.status, table.sort),
+    index("resume_tpl_category_idx").on(table.category),
+  ],
+);
+
+export const resumeTemplateGrants = sqliteTable(
+  "resume_template_grants",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    username: text("username").notNull(),
+    openId: text("open_id").notNull().default(""),
+    templateId: integer("template_id").notNull(),
+    outTradeNo: text("out_trade_no").notNull().default(""),
+    createdAt: integer("created_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("ux_resume_tpl_grants_user_tpl").on(table.username, table.templateId),
+    index("resume_tpl_grants_username_idx").on(table.username),
+    index("resume_tpl_grants_template_idx").on(table.templateId),
+  ],
 );
 
 export const savedTemplates = sqliteTable(

@@ -35,3 +35,6 @@ local.db-*
 
 # vercel
 .vercel
+
+.vercel
+.env*
