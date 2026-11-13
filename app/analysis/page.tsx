@@ -27,13 +27,13 @@ export default async function AnalysisPage() {
           <p className="eyebrow">Resume review</p>
           <h1 className="mt-2 font-display text-3xl font-bold text-ink">简历诊断与评分</h1>
           <p className="mt-3 max-w-xl text-sm leading-7 text-ink-muted">
-            上传现有简历，从 6 个维度检查完整性、成果表达、结构和可读性。报告会指出具体问题、原文证据和可执行的修改方向。
+            上传现有简历，由大模型按 V2 规则评估信息完整度、岗位匹配度、经历质量与成果量化、职业轨迹与稳定性。报告会给出原文证据和可执行的修改方向。
           </p>
           <div className="mt-7 grid gap-3 sm:grid-cols-3">
             {[
-              { icon: FileSearch, title: "逐项检查", text: "找出缺失信息和表达问题" },
-              { icon: Target, title: "结果导向", text: "关注量化成果与关键词" },
-              { icon: ShieldCheck, title: "隐私可控", text: "报告按账号隔离存储" },
+              { icon: FileSearch, title: "四维诊断", text: "经历质量占 45 分核心权重" },
+              { icon: Target, title: "结果导向", text: "检查动词、量化与价值归因" },
+              { icon: ShieldCheck, title: "全程可追踪", text: "流式展示模型分析进度" },
             ].map((item) => (
               <div key={item.title} className="surface-card p-4">
                 <item.icon size={19} className="text-primary-pine" />
@@ -76,8 +76,8 @@ export default async function AnalysisPage() {
               <CheckCircle2 size={16} className="text-accent-success" /> 分析结果怎么用
             </p>
             <ol className="mt-2 space-y-1.5 text-sm leading-6 text-ink-muted">
-              <li>先修复高风险问题，例如缺少联系方式、经历没有结果。</li>
-              <li>再用 JD 匹配检查岗位关键词和硬性要求。</li>
+              <li>先修复高风险问题，重点是经历中没有成果证据的部分。</li>
+              <li>有目标岗位时填写 JD，让系统检查硬性要求和关键词覆盖。</li>
               <li>最后回到编辑器修改并重新导出。</li>
             </ol>
           </div>
@@ -85,7 +85,7 @@ export default async function AnalysisPage() {
 
         <aside className="surface-card h-fit p-5 sm:p-6">
           <h2 className="font-display text-xl font-bold text-ink">上传简历</h2>
-          <p className="mt-1 text-sm text-ink-muted">当前免费，登录后即可使用。</p>
+          <p className="mt-1 text-sm text-ink-muted">登录后由大模型完成深度诊断。</p>
           <div className="mt-5">
             <UploadAnalyzer />
           </div>

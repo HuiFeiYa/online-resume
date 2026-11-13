@@ -3,11 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function AuthForm({ mode }: { mode: "login" | "register" }) {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -56,18 +58,29 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
       </div>
       <div>
         <label className="field-label" htmlFor="password">密码</label>
-        <input
-          id="password"
-          className="field-input"
-          type="password"
-          autoComplete={isLogin ? "current-password" : "new-password"}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder={isLogin ? "输入密码" : "至少 6 位"}
-          minLength={isLogin ? 1 : 6}
-          maxLength={72}
-          required
-        />
+        <div className="relative">
+          <input
+            id="password"
+            className="field-input pr-11"
+            type={showPassword ? "text" : "password"}
+            autoComplete={isLogin ? "current-password" : "new-password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={isLogin ? "输入密码" : "至少 6 位"}
+            minLength={isLogin ? 1 : 6}
+            maxLength={72}
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((visible) => !visible)}
+            aria-label={showPassword ? "隐藏密码内容" : "显示密码内容"}
+            title={showPassword ? "隐藏密码" : "显示密码"}
+            className="absolute right-1.5 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded text-ink-muted transition-colors hover:bg-surface-base hover:text-ink"
+          >
+            {showPassword ? <EyeOff size={17} strokeWidth={1.8} /> : <Eye size={17} strokeWidth={1.8} />}
+          </button>
+        </div>
       </div>
       {error ? <p className="text-sm text-accent-danger">{error}</p> : null}
       <button type="submit" disabled={busy} className="btn-primary w-full">

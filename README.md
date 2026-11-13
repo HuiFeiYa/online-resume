@@ -6,7 +6,7 @@
 
 - 免费简历模板：模板中心读取服务端模板目录，支持搜索、分类、预览和代理下载 Word 文件。
 - 在线简历编辑：独立提供 8 套结构化可编辑版式，无需登录即可填写，草稿保存在浏览器，导出时再登录。
-- 简历诊断：上传 DOCX/PDF，按 6 个维度评分并给出问题证据和修改建议。
+- 简历诊断：上传 DOCX/PDF，由大模型按 V2 四维规则评分，并以 SSE 流式展示分析进度。
 - JD 匹配：选择在线简历并粘贴岗位描述，逐项输出满足情况、证据与差距。
 - 免费咨询：群二维码占位、咨询线索表单、管理后台线索查看。
 - 账号与隔离：昵称加密码注册登录，简历和分析报告按用户隔离。
@@ -28,7 +28,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-默认地址：`http://localhost:3000`。未配置任何云服务时，会使用本地 `local.db`，AI 分析自动降级为本地规则分析。
+默认地址：`http://localhost:3000`。未配置任何云服务时，会使用本地 `local.db`。简历诊断必须配置大模型后才能使用，未配置或调用失败时会直接报错，不会降级成本地规则分析。
 
 Node.js 要求 `>=22`。
 
@@ -52,12 +52,11 @@ R2_PUBLIC_BASE_URL=
 # 服务端模板已内置在 /api/xcx/resume-templates，无需外部地址
 # TEMPLATE_STORE_API_BASE_URL=
 
-# 模型（未配置时使用本地规则分析）
-LLM_PROVIDER=qwen
+# 模型（简历诊断必填；需兼容 OpenAI Chat Completions 并支持流式 SSE）
+LLM_PROVIDER=openai-compatible
 LLM_API_KEY=
 LLM_BASE_URL=
 LLM_MODEL=
-LLM_STRONG_MODEL=
 ```
 
 ## 常用命令

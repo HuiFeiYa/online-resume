@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { analyzeResumeText, localJdMatch } from "@/lib/analysis/local";
 import {
+  analysisDraftSchema,
+  finalizeAnalysisReport,
+} from "@/lib/analysis/v2";
+import {
   createDemoResume,
   normalizeResumeData,
   resumeDataSchema,
@@ -21,13 +25,70 @@ const resumeText = `张三
 技能
 熟练使用 SQL、Tableau 和 Figma`;
 
-describe("resume analysis", () => {
-  it("returns a bounded six-dimension score", () => {
+const validDraft = {
+  informationCompleteness: { score: 18, summary: "联系方式和教育模块完整。" },
+  jobMatch: { score: 14, summary: "核心技能有覆盖，业务领域部分相关。" },
+  experienceQuality: {
+    structureLogic: 7,
+    actionContribution: 6,
+    quantifiedValue: 11,
+    skillsInContext: 8,
+    summary: "有量化结果，但部分描述仍偏职责。" },
+  careerTrajectory: {
+    continuity: 4,
+    progression: 3,
+    stability: 3,
+    summary: "时间线基本连续，晋升信息不足。" },
+  issues: [
+    {
+      severity: "high" as const,
+      dimension: "experience_quality" as const,
+      section: "工作经历",
+      evidence: "负责用户增长",
+      issue: "开头动词偏弱，个人贡献不够突出。",
+      suggestion: "改为主导或独立负责，并说明个人负责的模块。",
+      rewrite: "主导用户增长专项，独立负责注册链路优化。",
+    },
+  ],
+  quickWins: ["补充转化率优化前后的对比数据。"],
+  summary: "简历基础完整，最优先提升经历中的个人贡献和量化证据。",
+};
+
+describe("resume analysis v2", () => {
+  it("computes a bounded four-dimension score from fixed weights", () => {
+    const report = finalizeAnalysisReport(validDraft);
+    expect(report.version).toBe("2.0");
+    expect(report.dimensions).toHaveLength(4);
+    expect(report.dimensions.map((item) => item.max)).toEqual([20, 20, 45, 15]);
+    expect(report.overallScore).toBe(18 + 14 + (7 + 6 + 11 + 8) + (4 + 3 + 3));
+  });
+
+  it("expands the core dimension into its four sub-scores", () => {
+    const report = finalizeAnalysisReport(validDraft);
+    const core = report.dimensions.find((item) => item.key === "experience_quality");
+    expect(core?.score).toBe(32);
+    expect(core?.details.map((item) => item.max)).toEqual([10, 10, 15, 10]);
+  });
+
+  it("rejects a draft whose sub-score exceeds its cap", () => {
+    const parsed = analysisDraftSchema.safeParse({
+      ...validDraft,
+      experienceQuality: { ...validDraft.experienceQuality, quantifiedValue: 16 },
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it("requires at least one evidence-based issue", () => {
+    const parsed = analysisDraftSchema.safeParse({ ...validDraft, issues: [] });
+    expect(parsed.success).toBe(false);
+  });
+});
+
+describe("legacy local analysis", () => {
+  it("keeps the local heuristic available for JD matching only", () => {
     const result = analyzeResumeText(resumeText);
     expect(result.overallScore).toBeGreaterThan(0);
     expect(result.overallScore).toBeLessThanOrEqual(100);
-    expect(result.dimensions).toHaveLength(6);
-    expect(result.dimensions.reduce((sum, item) => sum + item.max, 0)).toBe(100);
   });
 
   it("flags missing contact information", () => {
